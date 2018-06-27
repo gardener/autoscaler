@@ -50,8 +50,7 @@ fi
 
 ##############################################################################
 
-cd cluster-autoscaler
-make test-unit
+go test $(go list ./... | grep -v /vendor/)
 
 #TODO: Return success failure properly
 echo "CI tests are done"
