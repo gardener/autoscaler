@@ -21,11 +21,11 @@ autoscaler:
             dir: 'cluster-autoscaler'
     steps:
       check:
-        image: 'autoscaling-builder:latest'
+        image: 'eu.gcr.io/gardener-project/gardener/autoscaler/autoscaling-builder:0.1'
       test:
-        image: 'autoscaling-builder:latest'
+        image: 'eu.gcr.io/gardener-project/gardener/autoscaler/autoscaling-builder:0.1'
       build:
-        image: 'autoscaling-builder:latest'
+        image: 'eu.gcr.io/gardener-project/gardener/autoscaler/autoscaling-builder:0.1'
         output_dir: 'binary'
   variants:
     head-update: ~
