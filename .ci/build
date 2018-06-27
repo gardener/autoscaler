@@ -33,9 +33,9 @@ else
 fi
 
 if [[ -z "${BINARY_PATH}" ]]; then
-  export BINARY_PATH="${SOURCE_PATH}/bin"
+  export BINARY_PATH="${SOURCE_PATH}"
 else
-  export BINARY_PATH="$(${READLINK_BIN} -f "${BINARY_PATH}")/bin"
+  export BINARY_PATH="$(${READLINK_BIN} -f "${BINARY_PATH}")"
 fi
 
 # The `go <cmd>` commands requires to see the target repository to be part of a
