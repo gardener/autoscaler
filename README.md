@@ -4,7 +4,7 @@ This is a fork of [kubernetes/autoscaler](https://github.com/kubernetes/autoscal
 
 Find more details about this fork in [FORK.md](./FORK.md).
 
-**TL;DR** Support for Machine-controller-manager is added to cluster-autoscaler. It means cluster-autoscaler now works for all cloud-providers which MCM supports which are AWS, GCP, Azure, Openstack, Alibaba([Coming Soon](https://github.com/gardener/machine-controller-manager/pull/79)), vSphere([Coming soon](https://github.com/gardener/machine-controller-manager/issues/93))
+**TL;DR** Support for Machine-controller-manager is added to cluster-autoscaler. It means cluster-autoscaler now works for all cloud-providers which MCM supports which are AWS, GCP, Azure, Openstack, Alibaba, [Packet](https://github.com/gardener/machine-controller-manager/pull/190), vSphere([Coming soon](https://github.com/gardener/machine-controller-manager/issues/93))
 
 # Kubernetes Autoscaler
 
