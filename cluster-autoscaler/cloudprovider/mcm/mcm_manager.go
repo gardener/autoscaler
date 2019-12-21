@@ -177,7 +177,7 @@ func (m *McmManager) GetMachineDeploymentForMachine(machine *Ref) (*MachineDeplo
 }
 
 //Cleanup does nothing at the moment.
-//TODO: Enable cleanup menthod for graceful shutdown.
+//TODO: Enable cleanup method for graceful shutdown.
 func (m *McmManager) Cleanup() {
 	return
 }
@@ -326,7 +326,7 @@ func (m *McmManager) DeleteMachines(machines []*Ref) error {
 		break
 	}
 
-	glog.V(2).Infof("MachineDeployment %s size decreased to %q", commonMachineDeployment.Name, mdclone.Spec.Replicas)
+	glog.V(2).Infof("MachineDeployment %s size decreased to %d", commonMachineDeployment.Name, mdclone.Spec.Replicas)
 
 	return nil
 }

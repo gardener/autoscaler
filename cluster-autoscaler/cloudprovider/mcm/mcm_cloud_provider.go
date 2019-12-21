@@ -114,9 +114,15 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 		glog.Warningf("Node %v has no providerId", node.Name)
 		return nil, nil
 	}
+    
 	ref, err := ReferenceFromProviderID(mcm.mcmManager, node.Spec.ProviderID)
 	if err != nil {
 		return nil, err
+	}
+
+	if ref == nil {
+ 		glog.Infof("Skipped node %v, not managed by this controller", node.Spec.ProviderID)
+		return nil, nil 
 	}
 
 	return mcm.mcmManager.GetMachineDeploymentForMachine(ref)
@@ -176,7 +182,8 @@ func ReferenceFromProviderID(m *McmManager, id string) (*Ref, error) {
 	}
 	
 	if Name == "" {
-		return nil, fmt.Errorf("Could not find any machine corresponds to node %+v", id)
+		// Could not find any machine corresponds to node %+v", id
+		return nil, nil 
 	}
 	return &Ref{
 		Name:      Name,
