@@ -342,7 +342,20 @@ func (machinedeployment *MachineDeployment) Nodes() ([]string, error) {
 
 // TemplateNodeInfo returns a node template for this node group.
 func (machinedeployment *MachineDeployment) TemplateNodeInfo() (*schedulercache.NodeInfo, error) {
-	return nil, cloudprovider.ErrNotImplemented
+
+	nodeTemplate, err := machinedeployment.mcmManager.GetMachineDeploymentNodeTemplate(machinedeployment)
+	if err != nil {
+		return nil, err
+	}
+
+	node, err := machinedeployment.mcmManager.buildNodeFromTemplate(machinedeployment.Name, nodeTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeInfo := schedulercache.NewNodeInfo(cloudprovider.BuildKubeProxy(machinedeployment.Name))
+	nodeInfo.SetNode(node)
+	return nodeInfo, nil
 }
 
 func buildMachineDeploymentFromSpec(value string, mcmManager *McmManager) (*MachineDeployment, error) {

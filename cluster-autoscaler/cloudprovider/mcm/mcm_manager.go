@@ -23,7 +23,9 @@ package mcm
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -32,13 +34,19 @@ import (
 	machineinformers "github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions"
 	machinelisters "github.com/gardener/machine-controller-manager/pkg/client/listers/machine/v1alpha1"
 	corecontroller "github.com/gardener/machine-controller-manager/pkg/controller"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gardener/autoscaler/cluster-autoscaler/cloudprovider"
+	aws "github.com/gardener/autoscaler/cluster-autoscaler/cloudprovider/aws"
+	azure "github.com/gardener/autoscaler/cluster-autoscaler/cloudprovider/azure"
 	"github.com/gardener/autoscaler/cluster-autoscaler/config/dynamic"
+	"github.com/gardener/autoscaler/cluster-autoscaler/utils/gpu"
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 )
 
 const (
@@ -58,6 +66,20 @@ type McmManager struct {
 	coreclient              kubernetes.Interface
 	machineDeploymentLister machinelisters.MachineDeploymentLister
 	machinelisters          machinelisters.MachineLister
+}
+
+type instanceType struct {
+	InstanceType string
+	VCPU         int64
+	MemoryMb     int64
+	GPU          int64
+}
+
+type nodeTemplate struct {
+	InstanceType *instanceType
+	Region       string
+	Zone         string
+	Tags         map[string]string
 }
 
 func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions) (*McmManager, error) {
@@ -306,8 +328,8 @@ func (m *McmManager) DeleteMachines(machines []*Ref) error {
 		}
 
 		mdclone = md.DeepCopy()
-		if (int(mdclone.Spec.Replicas) - len(machines)) <= 0 {
-			return fmt.Errorf("Unable to delete machine in MachineDeployment object %s , machine replicas are <= 0 ", commonMachineDeployment.Name)
+		if (int(mdclone.Spec.Replicas) - len(machines)) < 0 {
+			return fmt.Errorf("Unable to delete machine in MachineDeployment object %s , machine replicas are < 0 ", commonMachineDeployment.Name)
 		}
 		mdclone.Spec.Replicas = mdclone.Spec.Replicas - int32(len(machines))
 
@@ -361,4 +383,145 @@ func (m *McmManager) GetMachineDeploymentNodes(machinedeployment *MachineDeploym
 		}
 	}
 	return nodes, nil
+}
+
+//GetMachineDeploymentNodeTemplate returns the NodeTemplate which belongs to the MachineDeployment.
+func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *MachineDeployment) (*nodeTemplate, error) {
+
+	md, err := m.machineclient.MachineDeployments(m.namespace).Get(machinedeployment.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("Unable to fetch MachineDeployment object %s, Error: %v", machinedeployment.Name, err)
+	}
+
+	var region string
+	var tags map[string]string
+	var instance instanceType
+	machineClass := md.Spec.Template.Spec.Class
+	switch machineClass.Kind {
+	case "AWSMachineClass":
+		mc, err := m.machineclient.AWSMachineClasses(m.namespace).Get(machineClass.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("Unable to fetch AWSMachineClass object %s, Error: %v", machinedeployment.Name, err)
+		}
+		awsInstance := aws.InstanceTypes[mc.Spec.MachineType]
+		instance = instanceType{
+			InstanceType: awsInstance.InstanceType,
+			VCPU:         awsInstance.VCPU,
+			MemoryMb:     awsInstance.MemoryMb,
+			GPU:          awsInstance.GPU,
+		}
+		region = mc.Spec.Region
+		tags = mc.Spec.Tags
+	case "AzureMachineClass":
+		mc, err := m.machineclient.AzureMachineClasses(m.namespace).Get(machineClass.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("Unable to fetch AzureMachineClass object %s, Error: %v", machinedeployment.Name, err)
+		}
+		azureInstance := azure.InstanceTypes[mc.Spec.Properties.HardwareProfile.VMSize]
+		instance = instanceType{
+			InstanceType: azureInstance.InstanceType,
+			VCPU:         azureInstance.VCPU,
+			MemoryMb:     azureInstance.MemoryMb,
+			GPU:          azureInstance.GPU,
+		}
+		region = mc.Spec.Location
+		tags = mc.Spec.Tags
+	default:
+		return nil, cloudprovider.ErrNotImplemented
+	}
+
+	nodeTmpl := &nodeTemplate{
+		InstanceType: &instance,
+		Region:       region,
+		Zone:         "undefined",
+		Tags:         tags,
+	}
+
+	return nodeTmpl, nil
+}
+
+func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) (*apiv1.Node, error) {
+	node := apiv1.Node{}
+	nodeName := fmt.Sprintf("%s-%d", name, rand.Int63())
+
+	node.ObjectMeta = metav1.ObjectMeta{
+		Name:     nodeName,
+		SelfLink: fmt.Sprintf("/api/v1/nodes/%s", nodeName),
+		Labels:   map[string]string{},
+	}
+
+	node.Status = apiv1.NodeStatus{
+		Capacity: apiv1.ResourceList{},
+	}
+
+	// Numbers pods per node will depends on the CNI used and the maxPods kubelet config, default is often 100
+	node.Status.Capacity[apiv1.ResourcePods] = *resource.NewQuantity(100, resource.DecimalSI)
+	node.Status.Capacity[apiv1.ResourceCPU] = *resource.NewQuantity(template.InstanceType.VCPU, resource.DecimalSI)
+	node.Status.Capacity[gpu.ResourceNvidiaGPU] = *resource.NewQuantity(template.InstanceType.GPU, resource.DecimalSI)
+	node.Status.Capacity[apiv1.ResourceMemory] = *resource.NewQuantity(template.InstanceType.MemoryMb*1024*1024, resource.DecimalSI)
+
+	node.Status.Allocatable = node.Status.Capacity
+
+	// NodeLabels
+	node.Labels = cloudprovider.JoinStringMaps(node.Labels, extractLabelsFromMachineDeployment(template.Tags))
+	// GenericLabels
+	node.Labels = cloudprovider.JoinStringMaps(node.Labels, buildGenericLabels(template, nodeName))
+
+	node.Spec.Taints = extractTaintsFromMachineDeployment(template.Tags)
+
+	node.Status.Conditions = cloudprovider.BuildReadyConditions()
+	return &node, nil
+}
+
+func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]string {
+	result := make(map[string]string)
+	// TODO: extract it somehow
+	result[kubeletapis.LabelArch] = cloudprovider.DefaultArch
+	result[kubeletapis.LabelOS] = cloudprovider.DefaultOS
+
+	result[kubeletapis.LabelInstanceType] = template.InstanceType.InstanceType
+
+	result[kubeletapis.LabelZoneRegion] = template.Region
+	result[kubeletapis.LabelZoneFailureDomain] = template.Zone
+	result[kubeletapis.LabelHostname] = nodeName
+	return result
+}
+
+func extractLabelsFromMachineDeployment(tags map[string]string) map[string]string {
+	result := make(map[string]string)
+
+	for key, value := range tags {
+		splits := strings.Split(key, "k8s.io/cluster-autoscaler/node-template/label/")
+		if len(splits) > 1 {
+			label := splits[1]
+			if label != "" {
+				result[label] = value
+			}
+		}
+	}
+
+	return result
+}
+
+func extractTaintsFromMachineDeployment(tags map[string]string) []apiv1.Taint {
+	taints := make([]apiv1.Taint, 0)
+
+	for key, value := range tags {
+		// The tag value must be in the format <tag>:NoSchedule
+		r, _ := regexp.Compile("(.*):(?:NoSchedule|NoExecute|PreferNoSchedule)")
+		if r.MatchString(value) {
+			splits := strings.Split(key, "k8s.io/cluster-autoscaler/node-template/taint/")
+			if len(splits) > 1 {
+				values := strings.SplitN(value, ":", 2)
+				if len(values) > 1 {
+					taints = append(taints, apiv1.Taint{
+						Key:    splits[1],
+						Value:  values[0],
+						Effect: apiv1.TaintEffect(values[1]),
+					})
+				}
+			}
+		}
+	}
+	return taints
 }
