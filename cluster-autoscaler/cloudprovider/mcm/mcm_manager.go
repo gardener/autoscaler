@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -79,7 +78,8 @@ type nodeTemplate struct {
 	InstanceType *instanceType
 	Region       string
 	Zone         string
-	Tags         map[string]string
+	Labels       map[string]string
+	Taints       []apiv1.Taint
 }
 
 func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions) (*McmManager, error) {
@@ -394,9 +394,9 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 	}
 
 	var region string
-	var tags map[string]string
 	var instance instanceType
 	machineClass := md.Spec.Template.Spec.Class
+	nodeTemplateSpec := md.Spec.Template.Spec.NodeTemplateSpec
 	switch machineClass.Kind {
 	case "AWSMachineClass":
 		mc, err := m.machineclient.AWSMachineClasses(m.namespace).Get(machineClass.Name, metav1.GetOptions{})
@@ -411,7 +411,6 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			GPU:          awsInstance.GPU,
 		}
 		region = mc.Spec.Region
-		tags = mc.Spec.Tags
 	case "AzureMachineClass":
 		mc, err := m.machineclient.AzureMachineClasses(m.namespace).Get(machineClass.Name, metav1.GetOptions{})
 		if err != nil {
@@ -425,16 +424,26 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			GPU:          azureInstance.GPU,
 		}
 		region = mc.Spec.Location
-		tags = mc.Spec.Tags
 	default:
 		return nil, cloudprovider.ErrNotImplemented
+	}
+
+	labels := make(map[string]string) 
+	taints := make([]apiv1.Taint, 0)
+
+	if nodeTemplateSpec.ObjectMeta.Labels != nil {
+		labels = nodeTemplateSpec.ObjectMeta.Labels 
+	}
+	if nodeTemplateSpec.Spec.Taints != nil {
+		taints = nodeTemplateSpec.Spec.Taints
 	}
 
 	nodeTmpl := &nodeTemplate{
 		InstanceType: &instance,
 		Region:       region,
-		Zone:         "undefined",
-		Tags:         tags,
+		Zone:         "undefined", // will be implemented in MCM
+		Labels:       labels, 
+		Taints:       taints,
 	}
 
 	return nodeTmpl, nil
@@ -463,11 +472,11 @@ func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) 
 	node.Status.Allocatable = node.Status.Capacity
 
 	// NodeLabels
-	node.Labels = cloudprovider.JoinStringMaps(node.Labels, extractLabelsFromMachineDeployment(template.Tags))
+	node.Labels = template.Labels
 	// GenericLabels
 	node.Labels = cloudprovider.JoinStringMaps(node.Labels, buildGenericLabels(template, nodeName))
 
-	node.Spec.Taints = extractTaintsFromMachineDeployment(template.Tags)
+	node.Spec.Taints = template.Taints
 
 	node.Status.Conditions = cloudprovider.BuildReadyConditions()
 	return &node, nil
@@ -475,7 +484,7 @@ func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) 
 
 func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]string {
 	result := make(map[string]string)
-	// TODO: extract it somehow
+	// TODO: extract from MCM
 	result[kubeletapis.LabelArch] = cloudprovider.DefaultArch
 	result[kubeletapis.LabelOS] = cloudprovider.DefaultOS
 
@@ -485,43 +494,4 @@ func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]stri
 	result[kubeletapis.LabelZoneFailureDomain] = template.Zone
 	result[kubeletapis.LabelHostname] = nodeName
 	return result
-}
-
-func extractLabelsFromMachineDeployment(tags map[string]string) map[string]string {
-	result := make(map[string]string)
-
-	for key, value := range tags {
-		splits := strings.Split(key, "k8s.io/cluster-autoscaler/node-template/label/")
-		if len(splits) > 1 {
-			label := splits[1]
-			if label != "" {
-				result[label] = value
-			}
-		}
-	}
-
-	return result
-}
-
-func extractTaintsFromMachineDeployment(tags map[string]string) []apiv1.Taint {
-	taints := make([]apiv1.Taint, 0)
-
-	for key, value := range tags {
-		// The tag value must be in the format <tag>:NoSchedule
-		r, _ := regexp.Compile("(.*):(?:NoSchedule|NoExecute|PreferNoSchedule)")
-		if r.MatchString(value) {
-			splits := strings.Split(key, "k8s.io/cluster-autoscaler/node-template/taint/")
-			if len(splits) > 1 {
-				values := strings.SplitN(value, ":", 2)
-				if len(values) > 1 {
-					taints = append(taints, apiv1.Taint{
-						Key:    splits[1],
-						Value:  values[0],
-						Effect: apiv1.TaintEffect(values[1]),
-					})
-				}
-			}
-		}
-	}
-	return taints
 }
