@@ -17,12 +17,9 @@ limitations under the License.
 package mcm
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
-	apiv1 "k8s.io/api/core/v1"
 	"github.com/gardener/autoscaler/cluster-autoscaler/cloudprovider"
 	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 )
