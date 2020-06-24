@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gardener/autoscaler/cluster-autoscaler/utils/drain"
 	apiv1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"github.com/gardener/autoscaler/cluster-autoscaler/utils/drain"
 	client "k8s.io/client-go/kubernetes"
 	schedulercache "k8s.io/kubernetes/pkg/scheduler/cache"
 )
@@ -70,7 +70,7 @@ func DetailedGetPodsForMove(nodeInfo *schedulercache.NodeInfo, skipNodesWithSyst
 		false,
 		skipNodesWithSystemPods,
 		skipNodesWithLocalStorage,
-		true,
+		false, // TODO: Revendor the clients.
 		client,
 		minReplicaCount,
 		time.Now())
