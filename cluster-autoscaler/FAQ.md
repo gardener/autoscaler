@@ -923,33 +923,13 @@ Cluster Autoscaler imports a huge chunk of internal k8s code as it calls out to 
 Therefore we want to keep set of libraries used in CA as close to one used by k8s, to avoid
 unexpected problems coming from version incompatibilities.
 
-Cluster Autoscaler depends on `go modules` mechanism for dependency management, but do not use it directly
-during build process. `go.mod` file is just used to generate the `vendor` directory and further compilation
-is run against set of libraries stored in `vendor`. `vendor` directory can be regenerated using [`update-vendor.sh`](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/hack/update-vendor.sh) script.
-The `update-vendor.sh` script is responsible for autogenerating `go.mod` file used by Cluster Autoscaler. The base
-of the file is `go.mod` file coming from [kubernetes/kubernetes](https://github.com/kubernetes/kubernetes) repository.
-On top of that script adds modifications as defined
-locally in [`go.mod-extra`](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/go.mod-extra) file.
-
-Note: It is important that one should **never manually edit** `go.mod` file as it is regenerated
-on each `update-vendor.sh` call. Any extra libraries or version overrides should be put in `go.mod-extra` file (syntax of the file
-is same as syntax of `go.mod` file).
-
-Finally `vendor` directry is materialized and validation tests are run.
-
-If everything completes correctly a commit with updated `vendor` directory is created automatically. The pull-request with changed vendor
-must be sent out manually. The PR should include the auto-generated commit as well as commits containing any manual changes/fixes that need to
-go together.
-
-Execution of `update-vendor.sh` can be parametrized using command line argumets:
- - `-f` - kubernetes/kubernetes fork to use. On `master` it defaults to `git@github.com:kubernetes/kubernetes.git`
- - `-r` - revision in kubernetes/kubernetes which should be used to get base `go.mod` file
- - `-d` - specifies script workdir; useful to speed up execution if script needs to be run multiple times, because updating vendor resulted in some compilation errors on Cluster-Autoscaler side which need to be fixed
- - `-o` - overrides go version check, which may be useful if CA needs to use a different go version than the one in kubernetes go.mod file
+To sync the repositories' vendored k8s libraries, we have a script that takes a
+released version of k8s and updates the `replace` directives of each k8s
+sub-library.
 
 Example execution looks like this:
 ```
-./hack/update-vendor.sh -d/tmp/ca-update-vendor.ou1l -fgit@github.com:kubernetes/kubernetes.git -rmaster
+./hack/update-vendor.sh 1.20.0-alpha.1
 ```
 
 Caveats:
