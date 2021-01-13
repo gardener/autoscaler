@@ -1,3 +1,4 @@
+//go:build !gce && !aws && !azure && !kubemark && !alicloud && !magnum && !digitalocean && !clusterapi && !huaweicloud && !ionoscloud
 // +build !gce,!aws,!azure,!kubemark,!alicloud,!magnum,!digitalocean,!clusterapi,!huaweicloud,!ionoscloud
 
 /*
@@ -51,8 +52,8 @@ var AvailableCloudProviders = []string{
 	cloudprovider.ExoscaleProviderName,
 	cloudprovider.HuaweicloudProviderName,
 	cloudprovider.OVHcloudProviderName,
-	clusterapi.ProviderName,
 	cloudprovider.MCMProviderName,
+	cloudprovider.ClusterAPIProiverName,
 	cloudprovider.IonoscloudProviderName,
 }
 
@@ -85,7 +86,7 @@ func buildCloudProvider(opts config.AutoscalingOptions, do cloudprovider.NodeGro
 		return ovhcloud.BuildOVHcloud(opts, do, rl)
 	case packet.ProviderName:
 		return packet.BuildPacket(opts, do, rl)
-	case clusterapi.ProviderName:
+	case cloudprovider.ClusterAPIProiverName:
 		return clusterapi.BuildClusterAPI(opts, do, rl)
 	case mcm.ProviderName:
 		return mcm.BuildMCM(opts, do, rl)
