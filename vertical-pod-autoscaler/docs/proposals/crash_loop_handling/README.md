@@ -16,20 +16,20 @@ Note: The experiment to simulate OOM Kill scenario was conducted using ![resourc
       used for this experiment. It was bombarded against the service endpoint of the deployment for 100 times with 5 seconds interval between every iteration to generate a sustained high load.
 ```
 We can see the pod restarting once it faces resource crunch at around 14:21 - 14:45 local time in the graph timeline.
-![Container Resource Restarting](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/ctr_restarting_resource_crunch.png)
+![Container Resource Restarting](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/ctr_restarting_resource_crunch.png)
 
 4. For both CPU and memory the recommender suggests a percentile resource unit upgrade from the historical value of resource usage obtained from memory, VeriticalPodAutoScalerCheckpoint or Prometheus client. This does not take into account the current sudden bump in the resource which might be increasing rapidly (exponentially) over a short duration and might be outside any observed range captured in the history. VPA recommender does not suggest a better scale up and scale down for such spikes (it often recommends less than the current usage if limits are configured higher than the requests) resulting in crashes.
 
 The Limits of the container during this 
-![Max Container Limits CPU](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_limits_cpu_cores.png)
+![Max Container Limits CPU](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_limits_cpu_cores.png)
 
-![Max Container Limits Memory](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_limits_mem_bytes.png)
+![Max Container Limits Memory](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_limits_mem_bytes.png)
 
 Please observe the CPU and memory hikes resulting in crash in the below graphs.
 
-![Max Container Requests CPU](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_requests_cpu_cores.png)
+![Max Container Requests CPU](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_requests_cpu_cores.png)
 
-![Max Container Requests Memory](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_requests_mem_bytes.png)
+![Max Container Requests Memory](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/max_ctr_requests_mem_bytes.png)
 
 Once the sustainance of such high load continues through the time, the container ends up in `OOMKilled` status as shown below.
 ```
@@ -79,19 +79,19 @@ Recommendation:
 The VPA recommendation for target limits at around during this time of operation is as follows. We can clearly observe that the CPU recommendation stays constant with the increasing load.
 
 #### VPA Target Recommendation
-![VPA target CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_target_recom_cpu.png)
+![VPA target CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_target_recom_cpu.png)
 
-![VPA target memory recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_target_recom_mem.png)
+![VPA target memory recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_target_recom_mem.png)
 
 #### VPA Upper Bound Recommendation
-![VPA upper bound CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_ub_recom_cpu.png)
+![VPA upper bound CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_ub_recom_cpu.png)
 
-![VPA upper bound memory recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_ub_recom_mem.png)
+![VPA upper bound memory recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_ub_recom_mem.png)
 
 #### VPA Lower Bound Recommendation
-![VPA lower bound CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_lb_recom_cpu.png)
+![VPA lower bound CPU recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_lb_recom_cpu.png)
 
-![VPA lower bound memory recommendation](https://github.com/kallurbsk/autoscaler/blob/master/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_lb_recom_mem.png)
+![VPA lower bound memory recommendation](https://github.com/kallurbsk/autoscaler/blob/machine-controller-manager-provider/vertical-pod-autoscaler/docs/images/vpa-recommender/vpa_lb_recom_mem.png)
 
 ## Goals
 - Pluggable new recommender in place of existing VPA recommender.
@@ -111,7 +111,7 @@ The VPA recommendation for target limits at around during this time of operation
 - Resource requests metrics for CPU and memory are obtained for each container in a pod from the prometheus client
 - The history obtained is initialized with the recommender to start estimating the target, lower and upper bounds for the containers, and there by the pods
 - Target Estimator, Lower Bound Requests and Upper Bound Requests are the three main estimations we determine using recommender
-- A percentile value for each of these estimators are set as ![follows](https://github.com/kallurbsk/autoscaler/blob/8cf6e2698a17cf9e7beb928136980cc78d1b9dfb/vertical-pod-autoscaler/pkg/recommender/logic/recommender.go#L101)
+- A percentile value for each of these estimators are set as ![follows](https://github.com/kallurbsk/autoscaler/blob/b46a54192da8ab4181346beba13ae1579db82063/vertical-pod-autoscaler/pkg/recommender/logic/recommender.go#L101)
   - 0.9 percentile for target CPU and Memory
   - 0.5 for lower bound requests of CPU and Memory
   - 0.95 for upper bound requests of CPU and Memory
