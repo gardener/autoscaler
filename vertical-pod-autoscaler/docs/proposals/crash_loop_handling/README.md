@@ -150,8 +150,7 @@ Doubling of resources based on current resource usage
   7. `last_crash_count_recorded_time` indicates the last crash count time recorded on the node. (Default: 0)
   8. `time_length_for_crash_check` is `current machine time - last_crash_count_recorded_time`. (Default: 0)
   9. We can set threshold_no_of_crashes to 3 as the default value. If there is a resource crunch even after bumping one of CPU or memory based on current usage and has resulted in a crash, threshold_no_of_crashes serves a threshold beyond which both resources are to be scaled up irrespective of current usage consumption.
-  10. The variables `threshold_no_of_crashes, last_crash_count_recorded_time, time_length_for_crash_check` are reset to default if the VPA recommender itself restarts.
-  `Example: Let's say we recommended the memory doubling but had constant crashes for more than 3 times. Then we get into else condition and double both memory and CPU irrespective of whatever the recommendation for individual resource is.`
+  10. The variables `threshold_no_of_crashes, last_crash_count_recorded_time, time_length_for_crash_check` are reset to default if the VPA recommender itself restarts. Example: Let's say we recommended the memory doubling but had constant crashes for more than 3 times. Then we get into else condition and double both memory and CPU irrespective of whatever the recommendation for individual resource is.
 
 #### Scale Down:
 Scale down to a variable between 1 and 2 times the local maxima within a time window
@@ -163,6 +162,11 @@ Scale down to a variable between 1 and 2 times the local maxima within a time wi
   5. It also is crucial to scale down stepwise with shorter time windows. This ensures:
       1. Scale Down is gradual and does not vary drastically unlike percentile method during spike on and spike off events
       2. Scale Down is always done with nearest local maxima of resource usage which ensures we are not unncessarily taking history into account to avoid over or under provision resources.
+
+
+### Annotation based recommender variables
+  1. To configure the VPA recommender to work in parallel with the existing VPA recommender a view only mode recommendation is provided through these annotation variables.
+  2. The variables depicting the recommendations given by the new recommender will be exported by the vpa-exporter to add values directly to these annotations.
 
 ### Example simulation of proposed target recommendation
 As you can see below, the container went into a `CrashLoopBackOff` by 18:51 around. Once the VPA recommender was edited to double the current peak witnessed in the usage, the container came back up from `CrashLoopBackOff` serving traffic.
