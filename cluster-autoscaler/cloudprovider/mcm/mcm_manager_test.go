@@ -40,3 +40,39 @@ func TestBuildGenericLabels(t *testing.T) {
 	assert.Equal(t, cloudprovider.DefaultArch, labels[kubeletapis.LabelArch])
 	assert.Equal(t, cloudprovider.DefaultOS, labels[kubeletapis.LabelOS])
 }
+
+func TestGenerationOfCorrectZoneValueFromMCLabel(t *testing.T) {
+	var (
+		resultingZone string
+		zoneA         = "zone-a"
+		zoneB         = "zone-b"
+		randomKey     = "random-key"
+		randomValue   = "random-value"
+	)
+
+	// Basic test to get zone value
+	resultingZone = getZoneValueFromMCLabels(map[string]string{
+		labelTopologyZone: zoneA,
+	})
+	assert.Equal(t, resultingZone, zoneA)
+
+	// Prefer labelTopologyZone label over labelFailureDomainZone
+	resultingZone = getZoneValueFromMCLabels(map[string]string{
+		labelTopologyZone:      zoneA,
+		labelFailureDomainZone: zoneB,
+	})
+	assert.Equal(t, resultingZone, zoneA)
+
+	// Fallback to labelFailureDomainZone whne labelTopologyZone is not found
+	resultingZone = getZoneValueFromMCLabels(map[string]string{
+		randomKey:              randomValue,
+		labelFailureDomainZone: zoneB,
+	})
+	assert.Equal(t, resultingZone, zoneB)
+
+	// When neither of the labels are found
+	resultingZone = getZoneValueFromMCLabels(map[string]string{
+		randomKey: randomValue,
+	})
+	assert.Equal(t, resultingZone, "")
+}
