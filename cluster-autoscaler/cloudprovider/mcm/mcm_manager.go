@@ -64,12 +64,6 @@ const (
 	conflictRetryInterval   = 5 * time.Second
 	// machinePriorityAnnotation is the annotation to set machine priority while deletion
 	machinePriorityAnnotation = "machinepriority.machine.sapcloud.io"
-	// labelFailureDomainZone is the deprecated label for failure domain zone used by kubernetes.io
-	// It has been deprecated in favor of (below) topology.kubernetes.io/zone label
-	// See: https://v1-18.docs.kubernetes.io/docs/reference/kubernetes-api/labels-annotations-taints/#failure-domainbetakubernetesiozone
-	labelFailureDomainZone = "failure-domain.beta.kubernetes.io/zone"
-	// labelTopologyZone is the label for topology zone used by kubernetes.io
-	labelTopologyZone = "topology.kubernetes.io/zone"
 	// kindAWSMachineClass is the kind for machine class used by In-tree AWS provider
 	kindAWSMachineClass = "AWSMachineClass"
 	// kindAzureMachineClass is the kind for machine class used by In-tree Azure provider
@@ -557,10 +551,10 @@ func getZoneValueFromMCLabels(labels map[string]string) string {
 	var zone string
 
 	if labels != nil {
-		if value, exists := labels[labelTopologyZone]; exists {
+		if value, exists := labels[apiv1.LabelZoneFailureDomainStable]; exists {
 			// Prefer zone value from the new label
 			zone = value
-		} else if value, exists := labels[labelFailureDomainZone]; exists {
+		} else if value, exists := labels[apiv1.LabelZoneFailureDomain]; exists {
 			// Fallback to zone value from deprecated label if new lable value doesn't exist
 			zone = value
 		}
@@ -606,12 +600,20 @@ func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]stri
 	result := make(map[string]string)
 	// TODO: extract from MCM
 	result[kubeletapis.LabelArch] = cloudprovider.DefaultArch
+	result[apiv1.LabelArchStable] = cloudprovider.DefaultArch
+
 	result[kubeletapis.LabelOS] = cloudprovider.DefaultOS
+	result[apiv1.LabelOSStable] = cloudprovider.DefaultOS
 
 	result[apiv1.LabelInstanceType] = template.InstanceType.InstanceType
+	result[apiv1.LabelInstanceTypeStable] = template.InstanceType.InstanceType
 
 	result[apiv1.LabelZoneRegion] = template.Region
+	result[apiv1.LabelZoneRegionStable] = template.Region
+
 	result[apiv1.LabelZoneFailureDomain] = template.Zone
+	result[apiv1.LabelZoneFailureDomainStable] = template.Zone
+
 	result[apiv1.LabelHostname] = nodeName
 	return result
 }

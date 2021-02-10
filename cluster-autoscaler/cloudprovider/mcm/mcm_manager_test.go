@@ -26,19 +26,39 @@ import (
 )
 
 func TestBuildGenericLabels(t *testing.T) {
+	var (
+		instanceTypeC4Large = "c4.large"
+		regionUSEast1       = "us-east-1"
+		zoneUSEast1a        = "us-east-1a"
+		testHostName        = "test-hostname"
+	)
+
 	labels := buildGenericLabels(&nodeTemplate{
 		InstanceType: &instanceType{
-			InstanceType: "c4.large",
+			InstanceType: instanceTypeC4Large,
 			VCPU:         2,
 			MemoryMb:     3840,
 		},
-		Region: "us-east-1",
-	}, "sillyname")
-	assert.Equal(t, "us-east-1", labels[apiv1.LabelZoneRegion])
-	assert.Equal(t, "sillyname", labels[apiv1.LabelHostname])
-	assert.Equal(t, "c4.large", labels[apiv1.LabelInstanceType])
+		Region: regionUSEast1,
+		Zone:   zoneUSEast1a,
+	}, testHostName)
+
 	assert.Equal(t, cloudprovider.DefaultArch, labels[kubeletapis.LabelArch])
+	assert.Equal(t, cloudprovider.DefaultArch, labels[apiv1.LabelArchStable])
+
 	assert.Equal(t, cloudprovider.DefaultOS, labels[kubeletapis.LabelOS])
+	assert.Equal(t, cloudprovider.DefaultOS, labels[apiv1.LabelOSStable])
+
+	assert.Equal(t, instanceTypeC4Large, labels[apiv1.LabelInstanceType])
+	assert.Equal(t, instanceTypeC4Large, labels[apiv1.LabelInstanceTypeStable])
+
+	assert.Equal(t, regionUSEast1, labels[apiv1.LabelZoneRegion])
+	assert.Equal(t, regionUSEast1, labels[apiv1.LabelZoneRegionStable])
+
+	assert.Equal(t, zoneUSEast1a, labels[apiv1.LabelZoneFailureDomain])
+	assert.Equal(t, zoneUSEast1a, labels[apiv1.LabelZoneFailureDomainStable])
+
+	assert.Equal(t, testHostName, labels[apiv1.LabelHostname])
 }
 
 func TestGenerationOfCorrectZoneValueFromMCLabel(t *testing.T) {
@@ -52,21 +72,21 @@ func TestGenerationOfCorrectZoneValueFromMCLabel(t *testing.T) {
 
 	// Basic test to get zone value
 	resultingZone = getZoneValueFromMCLabels(map[string]string{
-		labelTopologyZone: zoneA,
+		apiv1.LabelZoneFailureDomainStable: zoneA,
 	})
 	assert.Equal(t, resultingZone, zoneA)
 
-	// Prefer labelTopologyZone label over labelFailureDomainZone
+	// Prefer LabelZoneFailureDomainStable label over LabelZoneFailureDomain
 	resultingZone = getZoneValueFromMCLabels(map[string]string{
-		labelTopologyZone:      zoneA,
-		labelFailureDomainZone: zoneB,
+		apiv1.LabelZoneFailureDomainStable: zoneA,
+		apiv1.LabelZoneFailureDomain:       zoneB,
 	})
 	assert.Equal(t, resultingZone, zoneA)
 
-	// Fallback to labelFailureDomainZone whne labelTopologyZone is not found
+	// Fallback to LabelZoneFailureDomain when LabelZoneFailureDomainStable is not found
 	resultingZone = getZoneValueFromMCLabels(map[string]string{
-		randomKey:              randomValue,
-		labelFailureDomainZone: zoneB,
+		randomKey:                    randomValue,
+		apiv1.LabelZoneFailureDomain: zoneB,
 	})
 	assert.Equal(t, resultingZone, zoneB)
 
