@@ -27,6 +27,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -43,11 +44,15 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	aws "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/aws"
 	azure "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/azure"
 	"k8s.io/autoscaler/cluster-autoscaler/config/dynamic"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
+	"k8s.io/client-go/discovery"
 	coreinformers "k8s.io/client-go/informers"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
@@ -75,6 +80,24 @@ const (
 	providerAWS = "AWS"
 	// providerAzure is the provider type for Azure machine class object
 	providerAzure = "Azure"
+	// machineGroup is the group version used to identify machine API group objects
+	machineGroup = "machine.sapcloud.io"
+	// machineGroup is the API version used to identify machine API group objects
+	machineVersion = "v1alpha1"
+)
+
+var (
+	controlBurst *int
+	controlQPS   *float64
+	targetBurst  *int
+	targetQPS    *float64
+
+	awsMachineClassGVR   = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "awsmachineclasses"}
+	azureMachineClassGVR = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "azuremachineclasses"}
+	machineClassGVR      = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "machineclasses"}
+	machineGVR           = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "machines"}
+	machineSetGVR        = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "machinesets"}
+	machineDeploymentGVR = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "machinedeployments"}
 )
 
 //McmManager manages the client communication for MachineDeployments.
@@ -107,18 +130,11 @@ type nodeTemplate struct {
 	Taints       []apiv1.Taint
 }
 
-var (
-	controlBurst *int
-	controlQPS   *float64
-	targetBurst  *int
-	targetQPS    *float64
-)
-
 func init() {
-	controlBurst = flag.Int("control-burst", rest.DefaultBurst, "Throttling burst configuration for the client to control cluster's apiserver.")
-	controlQPS = flag.Float64("control-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to control cluster's apiserver.")
-	targetBurst = flag.Int("target-burst", rest.DefaultBurst, "Throttling burst configuration for the client to target cluster's apiserver.")
-	targetQPS = flag.Float64("target-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to target cluster's apiserver.")
+	controlBurst = flag.Int("control-apiserver-burst", rest.DefaultBurst, "Throttling burst configuration for the client to control cluster's apiserver.")
+	controlQPS = flag.Float64("control-apiserver-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to control cluster's apiserver.")
+	targetBurst = flag.Int("target-apiserver-burst", rest.DefaultBurst, "Throttling burst configuration for the client to target cluster's apiserver.")
+	targetQPS = flag.Float64("target-apiserver-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to target cluster's apiserver.")
 }
 
 func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions) (*McmManager, error) {
@@ -135,78 +151,170 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 		}
 	}
 
-	controlKubeconfig.Burst = *controlBurst
-	controlKubeconfig.QPS = float32(*controlQPS)
-	controlMachineClientBuilder := MachineControllerClientBuilder{
+	// Check if control APIServer has all requested resources
+	controlCoreClientBuilder := CoreControllerClientBuilder{
 		ClientConfig: controlKubeconfig,
 	}
-	controlMachineInformerFactory := machineinformers.NewFilteredSharedInformerFactory(
-		controlMachineClientBuilder.ClientOrDie("control-machine-shared-informers"),
-		resyncPeriod,
-		namespace,
-		nil,
-	)
-
-	controlMachineClient := controlMachineClientBuilder.ClientOrDie("control-machine-client").MachineV1alpha1()
-	machineSharedInformers := controlMachineInformerFactory.Machine().V1alpha1()
-	azureMachineClassInformer := machineSharedInformers.AWSMachineClasses().Informer()
-	awsMachineClassInformer := machineSharedInformers.AWSMachineClasses().Informer()
-	machineInformer := machineSharedInformers.Machines().Informer()
-	machineSetInformer := machineSharedInformers.MachineSets().Informer()
-	machineDeploymentInformer := machineSharedInformers.MachineDeployments().Informer()
-	machineClassInformer := machineSharedInformers.MachineClasses().Informer()
-
-	// targetKubeconfig for the cluster for which nodes will be managed
-	targetKubeconfigPath := os.Getenv("TARGET_KUBECONFIG")
-	targetKubeconfig, err := clientcmd.BuildConfigFromFlags("", targetKubeconfigPath)
+	availableResources, err := getAvailableResources(controlCoreClientBuilder)
 	if err != nil {
 		return nil, err
 	}
 
-	targetKubeconfig.Burst = *targetBurst
-	targetKubeconfig.QPS = float32(*targetQPS)
-	targetCoreClientBuilder := CoreControllerClientBuilder{
-		ClientConfig: targetKubeconfig,
+	if availableResources[machineGVR] && availableResources[machineSetGVR] && availableResources[machineDeploymentGVR] {
+		var (
+			awsMachineClassLister   machinelisters.AWSMachineClassLister
+			azureMachineClassLister machinelisters.AzureMachineClassLister
+			machineClassLister      machinelisters.MachineClassLister
+			syncFuncs               []cache.InformerSynced
+		)
+
+		// Initialize control kubeconfig informer factory
+		controlKubeconfig.Burst = *controlBurst
+		controlKubeconfig.QPS = float32(*controlQPS)
+		controlMachineClientBuilder := MachineControllerClientBuilder{
+			ClientConfig: controlKubeconfig,
+		}
+		controlMachineInformerFactory := machineinformers.NewFilteredSharedInformerFactory(
+			controlMachineClientBuilder.ClientOrDie("control-machine-shared-informers"),
+			resyncPeriod,
+			namespace,
+			nil,
+		)
+
+		controlMachineClient := controlMachineClientBuilder.ClientOrDie("control-machine-client").MachineV1alpha1()
+		machineSharedInformers := controlMachineInformerFactory.Machine().V1alpha1()
+
+		// Initialize mandatory control cluster informers
+		machineInformer := machineSharedInformers.Machines().Informer()
+		machineSetInformer := machineSharedInformers.MachineSets().Informer()
+		machineDeploymentInformer := machineSharedInformers.MachineDeployments().Informer()
+
+		// Initialize optional control cluster informers
+		if availableResources[awsMachineClassGVR] {
+			awsMachineClassInformer := machineSharedInformers.AWSMachineClasses().Informer()
+			awsMachineClassLister = machineSharedInformers.AWSMachineClasses().Lister()
+			syncFuncs = append(syncFuncs, awsMachineClassInformer.HasSynced)
+		}
+		if availableResources[azureMachineClassGVR] {
+			azureMachineClassInformer := machineSharedInformers.AzureMachineClasses().Informer()
+			azureMachineClassLister = machineSharedInformers.AzureMachineClasses().Lister()
+			syncFuncs = append(syncFuncs, azureMachineClassInformer.HasSynced)
+		}
+		if availableResources[machineClassGVR] {
+			machineClassInformer := machineSharedInformers.MachineClasses().Informer()
+			machineClassLister = machineSharedInformers.MachineClasses().Lister()
+			syncFuncs = append(syncFuncs, machineClassInformer.HasSynced)
+		}
+
+		// targetKubeconfig for the cluster for which nodes will be managed
+		targetKubeconfigPath := os.Getenv("TARGET_KUBECONFIG")
+		targetKubeconfig, err := clientcmd.BuildConfigFromFlags("", targetKubeconfigPath)
+		if err != nil {
+			return nil, err
+		}
+
+		// Initialize target kubeconfig informer factory
+		targetKubeconfig.Burst = *targetBurst
+		targetKubeconfig.QPS = float32(*targetQPS)
+		targetCoreClientBuilder := CoreControllerClientBuilder{
+			ClientConfig: targetKubeconfig,
+		}
+		targetCoreInformerFactory := coreinformers.NewSharedInformerFactory(
+			targetCoreClientBuilder.ClientOrDie("target-core-shared-informers"),
+			resyncPeriod,
+		)
+
+		// Initialize mandatory target cluster node informer
+		coreSharedInformers := targetCoreInformerFactory.Core().V1()
+		nodeInformer := coreSharedInformers.Nodes().Informer()
+
+		m := &McmManager{
+			namespace:               namespace,
+			interrupt:               make(chan struct{}),
+			machineClient:           controlMachineClient,
+			awsMachineClassLister:   awsMachineClassLister,
+			azureMachineClassLister: azureMachineClassLister,
+			machineClassLister:      machineClassLister,
+			machineLister:           machineSharedInformers.Machines().Lister(),
+			machineSetLister:        machineSharedInformers.MachineSets().Lister(),
+			machineDeploymentLister: machineSharedInformers.MachineDeployments().Lister(),
+			nodeLister:              coreSharedInformers.Nodes().Lister(),
+			discoveryOpts:           discoveryOpts,
+		}
+
+		targetCoreInformerFactory.Start(m.interrupt)
+		controlMachineInformerFactory.Start(m.interrupt)
+
+		syncFuncs = append(
+			syncFuncs,
+			machineInformer.HasSynced,
+			machineSetInformer.HasSynced,
+			machineDeploymentInformer.HasSynced,
+			nodeInformer.HasSynced,
+		)
+
+		if !cache.WaitForCacheSync(m.interrupt, syncFuncs...) {
+			return nil, fmt.Errorf("Timed out waiting for caches to sync")
+		}
+
+		return m, nil
 	}
-	targetCoreInformerFactory := coreinformers.NewSharedInformerFactory(
-		targetCoreClientBuilder.ClientOrDie("target-core-shared-informers"),
-		resyncPeriod,
-	)
 
-	coreSharedInformers := targetCoreInformerFactory.Core().V1()
-	nodeInformer := coreSharedInformers.Nodes().Informer()
+	return nil, fmt.Errorf("Unable to start cloud provider MCM for cluster autoscaler: API GroupVersion %q or %q or %q is not available; \nFound: %#v", machineGVR, machineSetGVR, machineDeploymentGVR, availableResources)
+}
 
-	m := &McmManager{
-		namespace:               namespace,
-		interrupt:               make(chan struct{}),
-		machineClient:           controlMachineClient,
-		awsMachineClassLister:   machineSharedInformers.AWSMachineClasses().Lister(),
-		azureMachineClassLister: machineSharedInformers.AzureMachineClasses().Lister(),
-		machineClassLister:      machineSharedInformers.MachineClasses().Lister(),
-		machineLister:           machineSharedInformers.Machines().Lister(),
-		machineSetLister:        machineSharedInformers.MachineSets().Lister(),
-		machineDeploymentLister: machineSharedInformers.MachineDeployments().Lister(),
-		nodeLister:              coreSharedInformers.Nodes().Lister(),
-		discoveryOpts:           discoveryOpts,
+// TODO: In general, any controller checking this needs to be dynamic so
+//  users don't have to restart their controller manager if they change the apiserver.
+// Until we get there, the structure here needs to be exposed for the construction of a proper ControllerContext.
+func getAvailableResources(clientBuilder CoreClientBuilder) (map[schema.GroupVersionResource]bool, error) {
+	var discoveryClient discovery.DiscoveryInterface
+
+	var healthzContent string
+	// If apiserver is not running we should wait for some time and fail only then. This is particularly
+	// important when we start apiserver and controller manager at the same time.
+	err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+		client, err := clientBuilder.Client("controller-discovery")
+		if err != nil {
+			klog.Errorf("Failed to get api versions from server: %v", err)
+			return false, nil
+		}
+
+		healthStatus := 0
+		resp := client.Discovery().RESTClient().Get().AbsPath("/healthz").Do(context.TODO()).StatusCode(&healthStatus)
+		if healthStatus != http.StatusOK {
+			klog.Errorf("Server isn't healthy yet.  Waiting a little while.")
+			return false, nil
+		}
+		content, _ := resp.Raw()
+		healthzContent = string(content)
+
+		discoveryClient = client.Discovery()
+		return true, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get api versions from server: %v: %v", healthzContent, err)
 	}
 
-	targetCoreInformerFactory.Start(m.interrupt)
-	controlMachineInformerFactory.Start(m.interrupt)
-
-	syncFuncs := []cache.InformerSynced{
-		awsMachineClassInformer.HasSynced,
-		azureMachineClassInformer.HasSynced,
-		machineClassInformer.HasSynced,
-		machineInformer.HasSynced,
-		machineSetInformer.HasSynced,
-		machineDeploymentInformer.HasSynced,
-		nodeInformer.HasSynced,
+	resourceMap, err := discoveryClient.ServerResources()
+	if err != nil {
+		utilruntime.HandleError(fmt.Errorf("unable to get all supported resources from server: %v", err))
 	}
-	if !cache.WaitForCacheSync(m.interrupt, syncFuncs...) {
-		return nil, fmt.Errorf("Timed out waiting for caches to sync")
+	if len(resourceMap) == 0 {
+		return nil, fmt.Errorf("unable to get any supported resources from server")
 	}
 
-	return m, nil
+	allResources := map[schema.GroupVersionResource]bool{}
+	for _, apiResourceList := range resourceMap {
+		version, err := schema.ParseGroupVersion(apiResourceList.GroupVersion)
+		if err != nil {
+			return nil, err
+		}
+		for _, apiResource := range apiResourceList.APIResources {
+			allResources[version.WithResource(apiResource.Name)] = true
+		}
+	}
+
+	return allResources, nil
 }
 
 // CreateMcmManager creates the McmManager
