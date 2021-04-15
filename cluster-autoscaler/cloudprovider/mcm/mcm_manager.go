@@ -68,6 +68,7 @@ const (
 	maxRecordsReturnedByAPI = 100
 	maxRetryDeadline        = 1 * time.Minute
 	conflictRetryInterval   = 5 * time.Second
+	minResyncPeriodDefault  = 1 * time.Hour
 	// machinePriorityAnnotation is the annotation to set machine priority while deletion
 	machinePriorityAnnotation = "machinepriority.machine.sapcloud.io"
 	// kindAWSMachineClass is the kind for machine class used by In-tree AWS provider
@@ -87,10 +88,11 @@ const (
 )
 
 var (
-	controlBurst *int
-	controlQPS   *float64
-	targetBurst  *int
-	targetQPS    *float64
+	controlBurst    *int
+	controlQPS      *float64
+	targetBurst     *int
+	targetQPS       *float64
+	minResyncPeriod *time.Duration
 
 	awsMachineClassGVR   = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "awsmachineclasses"}
 	azureMachineClassGVR = schema.GroupVersionResource{Group: machineGroup, Version: machineVersion, Resource: "azuremachineclasses"}
@@ -135,10 +137,10 @@ func init() {
 	controlQPS = flag.Float64("control-apiserver-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to control cluster's apiserver.")
 	targetBurst = flag.Int("target-apiserver-burst", rest.DefaultBurst, "Throttling burst configuration for the client to target cluster's apiserver.")
 	targetQPS = flag.Float64("target-apiserver-qps", float64(rest.DefaultQPS), "Throttling QPS configuration for the client to target cluster's apiserver.")
+	minResyncPeriod = flag.Duration("min-resync-period", minResyncPeriodDefault, "The minimum resync period configured for the shared informers used by the MCM provider cached listers")
 }
 
 func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions) (*McmManager, error) {
-	const resyncPeriod = 12 * time.Hour
 	var namespace = os.Getenv("CONTROL_NAMESPACE")
 
 	// controlKubeconfig is the cluster where the machine objects are deployed
@@ -176,7 +178,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 		}
 		controlMachineInformerFactory := machineinformers.NewFilteredSharedInformerFactory(
 			controlMachineClientBuilder.ClientOrDie("control-machine-shared-informers"),
-			resyncPeriod,
+			*minResyncPeriod,
 			namespace,
 			nil,
 		)
@@ -221,7 +223,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 		}
 		targetCoreInformerFactory := coreinformers.NewSharedInformerFactory(
 			targetCoreClientBuilder.ClientOrDie("target-core-shared-informers"),
-			resyncPeriod,
+			*minResyncPeriod,
 		)
 
 		// Initialize mandatory target cluster node informer
