@@ -146,7 +146,24 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 		return nil, nil
 	}
 
-	return mcm.mcmManager.GetMachineDeploymentForMachine(ref)
+	md, err := mcm.mcmManager.GetMachineDeploymentForMachine(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	var isManaged bool
+	for _, nodeGroup := range mcm.machinedeployments {
+		if nodeGroup.Id() == md.Id() {
+			isManaged = true
+			break
+		}
+	}
+	if !isManaged {
+		klog.V(4).Infof("Skipped node %v, it's not managed by this controller", node.Spec.ProviderID)
+		return nil, nil
+	}
+
+	return md, nil
 }
 
 // Pricing returns pricing model for this cloud provider or error if not available.
