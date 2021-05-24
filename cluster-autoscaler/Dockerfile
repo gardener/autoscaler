@@ -18,7 +18,8 @@ LABEL maintainer="Marcin Wielgus <mwielgus@google.com>"
 
 USER root
 ENV DEBIAN_FRONTEND noninteractive
-RUN clean-install ca-certificates
+RUN apt-get update && apt-get install openssl -y
+RUN clean-install ca-certificates -y
 
 RUN useradd -r default
 USER default
