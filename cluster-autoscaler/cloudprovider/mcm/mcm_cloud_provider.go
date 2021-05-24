@@ -152,8 +152,8 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 	}
 
 	var isManaged bool
-	for _, nodeGroup := range mcm.machinedeployments {
-		if nodeGroup.Id() == md.Id() {
+	for _, managedMachineDeployment := range mcm.machinedeployments {
+		if managedMachineDeployment.Id() == md.Id() {
 			isManaged = true
 			break
 		}
