@@ -16,9 +16,12 @@ ARG BASEIMAGE=k8s.gcr.io/debian-base-amd64:0.3.2
 FROM $BASEIMAGE
 LABEL maintainer="Marcin Wielgus <mwielgus@google.com>"
 
+USER root
 ENV DEBIAN_FRONTEND noninteractive
 RUN clean-install ca-certificates
 
+RUN useradd -r default
+USER default
 ADD rel/cluster-autoscaler cluster-autoscaler
 ADD run.sh run.sh
 
