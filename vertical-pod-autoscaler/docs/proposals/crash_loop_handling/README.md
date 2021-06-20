@@ -148,12 +148,12 @@ Doubling of resources based on current resource usage
   3. In the event of a spike in resource, we can recommend the target estimator, requests as double the current resource usage. The lower bound and upper bound become the function of target estimator instead of directly recommending based on resource usage using percentile approach. Lower bound can be set to 0.5 times the target estimator value and upper bound can be set to 2 times the target estimator value.
   4. This will ensure handling the spike as it is dependent on the current usage than a hysteresis of resource usage pattern and doubling will react exponentially to a potentially exponential spike in resouce usage.
   5. We consider the following parameters.
-    1. scaleDownSafetyFactor : Factor by which VPA recommender should suggest scale down based on current usage. Defaulted to 1.2
-    2. scaleUpFactor : Factor by which VPA recommender should suggest scale up based on current usage. Defaulted to 2.
-    3. thresholdMonitorTimeWindow: Time window to get local maxima of CPU and memory usage till the curren time. Defaulted to 30 minutes.
-    4. thresholdNumCrashes : Total number of crashes to withstand before doubling both CPU and memory irrespective of usage. Defaulted to 3.
-    5. thresholdScaleUp : Threshold value of the current resource request beyond which the VPA recommendation to scale up should act. Defaulted to 0.7 times current request.
-    6. thresholdScaleDown : Threshold value of the current resource request below which the VPA recommendation to scale down should act. Defaulted to 0.3 times current request.
+      1. scaleDownSafetyFactor : Factor by which VPA recommender should suggest scale down based on current usage. Defaulted to 1.2
+      2. scaleUpFactor : Factor by which VPA recommender should suggest scale up based on current usage. Defaulted to 2.
+      3. thresholdMonitorTimeWindow: Time window to get local maxima of CPU and memory usage till the curren time. Defaulted to 30 minutes.
+      4. thresholdNumCrashes : Total number of crashes to withstand before doubling both CPU and memory irrespective of usage. Defaulted to 3.
+      5. thresholdScaleUp : Threshold value of the current resource request beyond which the VPA recommendation to scale up should act. Defaulted to 0.7 times current request.
+      6. thresholdScaleDown : Threshold value of the current resource request below which the VPA recommendation to scale down should act. Defaulted to 0.3 times current request.
   6. To handle `CrashLoopBackOff` scenario exclusively, we intend to double both the CPU and memory resources irrespective of their current usage. This ensures the resources are distributed quickly to get the resource out of crashloop. `thresholdNumCrashes` and current pod status (if in `CrashLoopBackOff`) are key variables to determine this condition.
 
 #### Scale Down:
@@ -167,8 +167,8 @@ Scale down to a variable between 1 and 2 times the local maxima within a time wi
       1. Scale Down is gradual and does not vary drastically unlike percentile method during spike on and spike off events
       2. Scale Down is always done with nearest local maxima of resource usage which ensures we are not unncessarily taking history into account to avoid over or under provision resources.
       3. Local maxima of resource usage is reset everytime the thresholdMonitorTimeWindow completes from current time. A new value is selected under 2 criteria:
-        1. Either there is a better maxima within thresholdMonitorTimeWindow
-        2. Reset of local maxima has occurred as thresholdMonitorTimeWindow is complete. The new value is selected as there is a new time window started now.
+          1. Either there is a better maxima within thresholdMonitorTimeWindow
+          2. Reset of local maxima has occurred as thresholdMonitorTimeWindow is complete. The new value is selected as there is a new time window started now.
   6. Scale Down occurs iff `max(current resource usage, local maxima within time window) < lower threshold of current resource request`. The value for lower threshold is obtained by `thresholdScaleDown` parameter which is defaulted to 0.3. 
 
 ### No Scale
