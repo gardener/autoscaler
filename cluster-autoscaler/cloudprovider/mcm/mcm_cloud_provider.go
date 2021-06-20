@@ -22,13 +22,13 @@ Modifications Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights 
 package mcm
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
 	"k8s.io/autoscaler/cluster-autoscaler/config/dynamic"
@@ -50,7 +50,7 @@ const (
 // Reference: https://github.com/gardener/machine-controller-manager
 type mcmCloudProvider struct {
 	mcmManager         *McmManager
-	machinedeployments []*MachineDeployment
+	machinedeployments map[types.NamespacedName]*MachineDeployment
 	resourceLimiter    *cloudprovider.ResourceLimiter
 }
 
@@ -81,7 +81,7 @@ func BuildMCM(opts config.AutoscalingOptions, do cloudprovider.NodeGroupDiscover
 func buildStaticallyDiscoveringProvider(mcmManager *McmManager, specs []string, resourceLimiter *cloudprovider.ResourceLimiter) (*mcmCloudProvider, error) {
 	mcm := &mcmCloudProvider{
 		mcmManager:         mcmManager,
-		machinedeployments: make([]*MachineDeployment, 0),
+		machinedeployments: make(map[types.NamespacedName]*MachineDeployment),
 		resourceLimiter:    resourceLimiter,
 	}
 	for _, spec := range specs {
@@ -110,7 +110,8 @@ func (mcm *mcmCloudProvider) addNodeGroup(spec string) error {
 }
 
 func (mcm *mcmCloudProvider) addMachineDeployment(machinedeployment *MachineDeployment) {
-	mcm.machinedeployments = append(mcm.machinedeployments, machinedeployment)
+	key := types.NamespacedName{Namespace: machinedeployment.Namespace, Name: machinedeployment.Name}
+	mcm.machinedeployments[key] = machinedeployment
 	return
 }
 
@@ -147,7 +148,19 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 		return nil, nil
 	}
 
-	return mcm.mcmManager.GetMachineDeploymentForMachine(ref)
+	md, err := mcm.mcmManager.GetMachineDeploymentForMachine(ref)
+	if err != nil {
+		return nil, err
+	}
+
+	key := types.NamespacedName{Namespace: md.Namespace, Name: md.Name}
+	_, isManaged := mcm.machinedeployments[key]
+	if !isManaged {
+		klog.V(4).Infof("Skipped node %v, it's not managed by this controller", node.Spec.ProviderID)
+		return nil, nil
+	}
+
+	return md, nil
 }
 
 // Pricing returns pricing model for this cloud provider or error if not available.
@@ -174,8 +187,8 @@ func (mcm *mcmCloudProvider) GetResourceLimiter() (*cloudprovider.ResourceLimite
 
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
 // In particular the list of node groups returned by NodeGroups can change as a result of CloudProvider.Refresh().
-// TODO: Implement this method to update the machinedeployments dynamically
 func (mcm *mcmCloudProvider) Refresh() error {
+	// If we don't need to check between every reconcile, we will have return nil here
 	return nil
 }
 
@@ -197,13 +210,13 @@ type Ref struct {
 
 // ReferenceFromProviderID extracts the Ref from providerId. It returns corresponding machine-name to providerid.
 func ReferenceFromProviderID(m *McmManager, id string) (*Ref, error) {
-	machines, err := m.machineclient.Machines(m.namespace).List(context.TODO(), metav1.ListOptions{})
+	machines, err := m.machineLister.Machines(m.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, fmt.Errorf("Could not list machines due to error: %s", err)
 	}
 
 	var Name, Namespace string
-	for _, machine := range machines.Items {
+	for _, machine := range machines {
 		machineID := strings.Split(machine.Spec.ProviderID, "/")
 		nodeID := strings.Split(id, "/")
 		// If registered, the ID will match the AWS instance ID.
