@@ -139,7 +139,7 @@ Where,
 
 To address the concerns mentioned we are proposing this change in the recommendation engine of VPA recommender for autoscaler component.
 
-![VPA Recommender Proposal](../images/vpa_recommender_scale.png)
+![VPA Recommender Proposal](../../images/vpa_recommender_scale.png)
 
 #### Scale Up:
 Doubling of resources based on current resource usage
