@@ -642,8 +642,6 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 		return nil, fmt.Errorf("error fetching node object for worker pool %s, Error: %v", workerPool, err)
 	}
 
-	filteredNodes := filterOutNodesWithCapacity(nodes)
-
 	switch machineClass.Kind {
 	case kindMachineClass:
 		mc, err := m.machineClassLister.MachineClasses(m.namespace).Get(machineClass.Name)
@@ -657,6 +655,8 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			if err != nil {
 				return nil, fmt.Errorf("nodeTemplate validation error in MachineClass %s : %s", mc.Name, err)
 			}
+
+			filteredNodes := filterOutNodes(nodes, nodeTemplateAttributes.InstanceType)
 
 			if len(filteredNodes) > 0 {
 				klog.V(1).Infof("Nodes already existing in the worker pool %s", workerPool)
@@ -757,16 +757,28 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 	return nodeTmpl, nil
 }
 
-func filterOutNodesWithCapacity(nodes []*v1.Node) []*v1.Node {
+func filterOutNodes(nodes []*v1.Node, instanceType string) []*v1.Node {
 	var filteredNodes []*v1.Node
-
 	for _, node := range nodes {
-		if node.Status.Capacity != nil {
+		if node.Status.Capacity != nil && getInstanceTypeForNode(node) == instanceType {
 			filteredNodes = append(filteredNodes, node)
 		}
 	}
 
 	return filteredNodes
+}
+
+func getInstanceTypeForNode(node *v1.Node) string {
+	var instanceTypeLabelValue string
+	if node.Labels != nil {
+		if val, ok := node.Labels[apiv1.LabelInstanceTypeStable]; ok {
+			instanceTypeLabelValue = val
+		} else if val, ok := node.Labels[apiv1.LabelInstanceType]; ok {
+			instanceTypeLabelValue = val
+		}
+	}
+
+	return instanceTypeLabelValue
 }
 
 func getWorkerPoolForMachineDeploy(md *v1alpha1.MachineDeployment) string {
