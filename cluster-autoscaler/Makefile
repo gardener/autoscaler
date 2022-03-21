@@ -115,7 +115,7 @@ start:
 	@GO111MODULE=on go run main.go \
 			--kubeconfig=$(TARGET_KUBECONFIG) \
 			--cloud-provider=mcm \
-			--nodes=1:1:$(MACHINE_DEPLOYMENT_ZONE_1) \
+			--nodes=1:2:$(MACHINE_DEPLOYMENT_ZONE_1) \
 			--nodes=0:1:$(MACHINE_DEPLOYMENT_ZONE_2) \
 			--nodes=0:1:$(MACHINE_DEPLOYMENT_ZONE_3) \
 			--skip-nodes-with-system-pods=false \
@@ -127,6 +127,7 @@ start:
 			--scale-down-unneeded-time=5s \
 			--balance-similar-node-groups=true \
 			--max-node-provision-time=4m \
+			--leader-elect=$(LEADER_ELECT) \
 			--leader-elect-retry-period="20s" \
 			--leader-elect-renew-deadline="30s" \
 			--leader-elect-lease-duration="40s"
