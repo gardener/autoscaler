@@ -1,10 +1,20 @@
+## Prerequisite
+(Note the prerequisite will be made less restrictive with time)
+
+1. No user workload to be deployed other than system-components.
+2. All system-components to be able to run on one node
+3. 3 machinedeployments/node groups in the cluster should be present, with following min:max limits
+	- machineDeployment1 (1:2)
+	- machineDeployment2 (0:1)
+	- machineDeployment3 (0:1)
+
 ## Cluster Autoscaler integration test suite
 
 Cluster Autoscaler integration test suite runs a set of tests against an actual Shoot to verify the behaviour and report anomalies. The integration test suite provided with all the configurational inputs will
 
-1. Cleanup the test Shoot to have no workload
-2. Reconfigure the nodeGroups so that the test suite begins with only one nodeGroup
-3. The testcases will deploy and remove the workloads and nodes based on the test scenario
+1. Reconfigure the nodeGroups so that the test suite begins with only one nodeGroup, with 3 zones and 1 node running
+2. CA would run with leader-election= false
+2. The testcases will deploy and remove the workloads and nodes based on the test scenario
 
 ## Usage guide for running Cluster Autoscaler integration test suite
 

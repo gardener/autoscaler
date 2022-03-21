@@ -44,15 +44,26 @@ func (driver *Driver) adjustNodeGroups() error {
 	}
 
 	for index, machineDeployment := range machineDeployments.Items {
+		scaleDownMachineDeployment := machineDeployment.DeepCopy()
 		if index > 0 && machineDeployment.Spec.Replicas != 0 {
-			scaleDownMachineDeployment := machineDeployment.DeepCopy()
 			scaleDownMachineDeployment.Spec.Replicas = 0
-			_, err := driver.controlCluster.MCMClient.MachineV1alpha1().MachineDeployments(controlClusterNamespace).Update(context.Background(), scaleDownMachineDeployment, metav1.UpdateOptions{})
-			if err != nil {
-				return err
-			}
+		} else if index == 0 && machineDeployment.Spec.Replicas > 1 {
+			scaleDownMachineDeployment.Spec.Replicas = 1
+		}
+
+		_, err := driver.controlCluster.MCMClient.MachineV1alpha1().MachineDeployments(controlClusterNamespace).Update(context.Background(), scaleDownMachineDeployment, metav1.UpdateOptions{})
+		if err != nil {
+			return err
 		}
 	}
+
+	ginkgo.By("Adjusting node groups to initial required size")
+	gomega.Eventually(
+		driver.targetCluster.getNumberOfReadyNodes,
+		pollingTimeout,
+		pollingInterval).
+		Should(gomega.BeNumerically("==", initialNumberOfNodes))
+
 	return nil
 }
 
@@ -110,12 +121,14 @@ func (c *Driver) runAutoscaler() {
 	ginkgo.By("Starting Cluster Autoscaler....")
 	args := strings.Fields(
 		fmt.Sprintf(
-			"make --directory=%s start TARGET_KUBECONFIG=%s MACHINE_DEPLOYMENT_ZONE_1=%s MACHINE_DEPLOYMENT_ZONE_2=%s MACHINE_DEPLOYMENT_ZONE_3=%s",
+			"make --directory=%s start TARGET_KUBECONFIG=%s MACHINE_DEPLOYMENT_ZONE_1=%s MACHINE_DEPLOYMENT_ZONE_2=%s MACHINE_DEPLOYMENT_ZONE_3=%s LEADER_ELECT=%s",
 			"../",
 			c.targetCluster.KubeConfigFilePath,
 			fmt.Sprintf("%s.%s", controlClusterNamespace, machineDeployments.Items[0].Name),
 			fmt.Sprintf("%s.%s", controlClusterNamespace, machineDeployments.Items[1].Name),
-			fmt.Sprintf("%s.%s", controlClusterNamespace, machineDeployments.Items[2].Name)),
+			fmt.Sprintf("%s.%s", controlClusterNamespace, machineDeployments.Items[2].Name),
+			"false",
+		),
 	)
 
 	outputFile, err := rotateLogFile(CALogFile)
