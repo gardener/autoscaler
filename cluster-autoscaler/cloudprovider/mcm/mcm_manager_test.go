@@ -100,7 +100,7 @@ func TestGenerationOfCorrectZoneValueFromMCLabel(t *testing.T) {
 	assert.Equal(t, resultingZone, "")
 }
 
-func TestFilterNodesWithCapacity(t *testing.T) {
+func TestFilterNodes(t *testing.T) {
 	var (
 		node1 = &apiv1.Node{
 			Status: apiv1.NodeStatus{
