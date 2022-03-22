@@ -119,4 +119,3 @@ func TestFilterNodesWithCapacity(t *testing.T) {
 	assert.EqualValues(t, len(filteredNodes), 1)
 	assert.Equal(t, filteredNodes, []*apiv1.Node{node1})
 }
-
