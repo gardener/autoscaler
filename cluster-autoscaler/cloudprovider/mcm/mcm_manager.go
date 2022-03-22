@@ -116,7 +116,7 @@ type instanceType struct {
 	Memory           resource.Quantity
 	GPU              resource.Quantity
 	EphemeralStorage resource.Quantity
-	NumberOfPods     resource.Quantity
+	PodCount         resource.Quantity
 }
 
 type nodeTemplate struct {
@@ -667,7 +667,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 					Memory:           baseNode.Status.Capacity[apiv1.ResourceMemory],
 					GPU:              baseNode.Status.Capacity[gpu.ResourceNvidiaGPU],
 					EphemeralStorage: baseNode.Status.Capacity[apiv1.ResourceEphemeralStorage],
-					NumberOfPods:     baseNode.Status.Capacity[apiv1.ResourcePods],
+					PodCount:         baseNode.Status.Capacity[apiv1.ResourcePods],
 				}
 			} else {
 				klog.V(1).Infof("Generating node template only using nodeTemplate from MachineClass %s: template resources-> cpu: %s,memory: %s", machineClass.Name, nodeTemplateAttributes.Capacity.Cpu().String(), nodeTemplateAttributes.Capacity.Memory().String())
@@ -676,7 +676,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 					Memory: nodeTemplateAttributes.Capacity[apiv1.ResourceMemory],
 					GPU:    nodeTemplateAttributes.Capacity["gpu"],
 					// Numbers pods per node will depends on the CNI used and the maxPods kubelet config, default is often 110
-					NumberOfPods: resource.MustParse("110"),
+					PodCount: resource.MustParse("110"),
 				}
 			}
 			instance.InstanceType = nodeTemplateAttributes.InstanceType
@@ -703,7 +703,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 				Memory:       awsInstance.Memory,
 				GPU:          awsInstance.GPU,
 				// Numbers pods per node will depends on the CNI used and the maxPods kubelet config, default is often 110
-				NumberOfPods: resource.MustParse("110"),
+				PodCount: resource.MustParse("110"),
 			}
 			region = providerSpec.Region
 			zone = getZoneValueFromMCLabels(mc.Labels)
@@ -723,7 +723,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 				Memory:       azureInstance.Memory,
 				GPU:          azureInstance.GPU,
 				// Numbers pods per node will depends on the CNI used and the maxPods kubelet config, default is often 110
-				NumberOfPods: resource.MustParse("110"),
+				PodCount: resource.MustParse("110"),
 			}
 			region = providerSpec.Location
 			if providerSpec.Properties.Zone != nil {
@@ -821,7 +821,7 @@ func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) 
 		Capacity: apiv1.ResourceList{},
 	}
 
-	node.Status.Capacity[apiv1.ResourcePods] = template.InstanceType.NumberOfPods
+	node.Status.Capacity[apiv1.ResourcePods] = template.InstanceType.PodCount
 	node.Status.Capacity[apiv1.ResourceCPU] = template.InstanceType.VCPU
 	if template.InstanceType.GPU.Cmp(resource.MustParse("0")) != 0 {
 		node.Status.Capacity[gpu.ResourceNvidiaGPU] = template.InstanceType.GPU
