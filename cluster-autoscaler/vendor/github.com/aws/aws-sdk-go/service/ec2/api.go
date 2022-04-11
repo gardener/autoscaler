@@ -2039,7 +2039,7 @@ func (c *EC2) AttachVolumeRequest(input *AttachVolumeInput) (req *request.Reques
 // the instance with the specified device name.
 //
 // Encrypted EBS volumes must be attached to instances that support Amazon EBS
-// encryption. For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// encryption. For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // After you attach an EBS volume, you must make it available. For more information,
@@ -6108,7 +6108,7 @@ func (c *EC2) CreateSnapshotRequest(input *CreateSnapshotInput) (req *request.Re
 //
 // You can take a snapshot of an attached volume that is in use. However, snapshots
 // only capture data that has been written to your EBS volume at the time the
-// snapshot command is issued; this may exclude any data that has been cached
+// snapshot command is issued; this might exclude any data that has been cached
 // by any applications or the operating system. If you can pause any file systems
 // on the volume long enough to take a snapshot, your snapshot should be complete.
 // However, if you cannot pause all file writes to the volume, you should unmount
@@ -6129,7 +6129,7 @@ func (c *EC2) CreateSnapshotRequest(input *CreateSnapshotInput) (req *request.Re
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // For more information, see Amazon Elastic Block Store (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AmazonEBS.html)
-// and Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// and Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -7423,8 +7423,7 @@ func (c *EC2) CreateVolumeRequest(input *CreateVolumeInput) (req *request.Reques
 // CreateVolume API operation for Amazon Elastic Compute Cloud.
 //
 // Creates an EBS volume that can be attached to an instance in the same Availability
-// Zone. The volume is created in the regional endpoint that you send the HTTP
-// request to. For more information see Regions and Endpoints (https://docs.aws.amazon.com/general/latest/gr/rande.html).
+// Zone.
 //
 // You can create a new empty volume or restore a volume from an EBS snapshot.
 // Any AWS Marketplace product codes from the snapshot are propagated to the
@@ -7433,7 +7432,7 @@ func (c *EC2) CreateVolumeRequest(input *CreateVolumeInput) (req *request.Reques
 // You can create encrypted volumes. Encrypted volumes must be attached to instances
 // that support Amazon EBS encryption. Volumes that are created from encrypted
 // snapshots are also automatically encrypted. For more information, see Amazon
-// EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // You can tag your volumes during creation. For more information, see Tagging
@@ -7624,6 +7623,10 @@ func (c *EC2) CreateVpcEndpointRequest(input *CreateVpcEndpointInput) (req *requ
 // the subnets in which to create an endpoint, and the security groups to associate
 // with the endpoint network interface.
 //
+// A GatewayLoadBalancer endpoint is a network interface in your subnet that
+// serves an endpoint for communicating with a Gateway Load Balancer that you've
+// configured as a VPC endpoint service.
+//
 // Use DescribeVpcEndpointServices to get a list of supported services.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -7779,12 +7782,19 @@ func (c *EC2) CreateVpcEndpointServiceConfigurationRequest(input *CreateVpcEndpo
 // CreateVpcEndpointServiceConfiguration API operation for Amazon Elastic Compute Cloud.
 //
 // Creates a VPC endpoint service configuration to which service consumers (AWS
-// accounts, IAM users, and IAM roles) can connect. Service consumers can create
-// an interface VPC endpoint to connect to your service.
+// accounts, IAM users, and IAM roles) can connect.
 //
-// To create an endpoint service configuration, you must first create a Network
-// Load Balancer for your service. For more information, see VPC Endpoint Services
-// (https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html)
+// To create an endpoint service configuration, you must first create one of
+// the following for your service:
+//
+//    * A Network Load Balancer (https://docs.aws.amazon.com/elasticloadbalancing/latest/network/introduction.html).
+//    Service consumers connect to your service using an interface endpoint.
+//
+//    * A Gateway Load Balancer (https://docs.aws.amazon.com/elasticloadbalancing/latest/gateway/introduction.html).
+//    Service consumers connect to your service using a Gateway Load Balancer
+//    endpoint.
+//
+// For more information, see VPC Endpoint Services (https://docs.aws.amazon.com/vpc/latest/userguide/endpoint-service.html)
 // in the Amazon Virtual Private Cloud User Guide.
 //
 // If you set the private DNS name, you must prove that you own the private
@@ -8666,11 +8676,29 @@ func (c *EC2) DeleteFleetsRequest(input *DeleteFleetsInput) (req *request.Reques
 //
 // Deletes the specified EC2 Fleet.
 //
-// After you delete an EC2 Fleet, it launches no new instances. You must specify
-// whether an EC2 Fleet should also terminate its instances. If you terminate
-// the instances, the EC2 Fleet enters the deleted_terminating state. Otherwise,
-// the EC2 Fleet enters the deleted_running state, and the instances continue
-// to run until they are interrupted or you terminate them manually.
+// After you delete an EC2 Fleet, it launches no new instances.
+//
+// You must specify whether a deleted EC2 Fleet should also terminate its instances.
+// If you choose to terminate the instances, the EC2 Fleet enters the deleted_terminating
+// state. Otherwise, the EC2 Fleet enters the deleted_running state, and the
+// instances continue to run until they are interrupted or you terminate them
+// manually.
+//
+// For instant fleets, EC2 Fleet must terminate the instances when the fleet
+// is deleted. A deleted instant fleet with running instances is not supported.
+//
+// Restrictions
+//
+//    * You can delete up to 25 instant fleets in a single request. If you exceed
+//    this number, no instant fleets are deleted and an error is returned. There
+//    is no restriction on the number of fleets of type maintain or request
+//    that can be deleted in a single request.
+//
+//    * Up to 1000 instances can be terminated in a single request to delete
+//    instant fleets.
+//
+// For more information, see Deleting an EC2 Fleet (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-ec2-fleet.html#delete-fleet)
+// in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -11637,8 +11665,10 @@ func (c *EC2) DeleteVpcEndpointsRequest(input *DeleteVpcEndpointsInput) (req *re
 //
 // Deletes one or more specified VPC endpoints. Deleting a gateway endpoint
 // also deletes the endpoint routes in the route tables that were associated
-// with the endpoint. Deleting an interface endpoint deletes the endpoint network
-// interfaces.
+// with the endpoint. Deleting an interface endpoint or a Gateway Load Balancer
+// endpoint deletes the endpoint network interfaces. Gateway Load Balancer endpoints
+// can only be deleted if the routes that are associated with the endpoint are
+// deleted.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -21589,7 +21619,7 @@ func (c *EC2) DescribeSnapshotAttributeRequest(input *DescribeSnapshotAttributeI
 // Describes the specified attribute of the specified snapshot. You can specify
 // only one attribute at a time.
 //
-// For more information about EBS snapshots, see Amazon EBS Snapshots (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
+// For more information about EBS snapshots, see Amazon EBS snapshots (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -21718,7 +21748,7 @@ func (c *EC2) DescribeSnapshotsRequest(input *DescribeSnapshotsInput) (req *requ
 //
 // To get the state of fast snapshot restores for a snapshot, use DescribeFastSnapshotRestores.
 //
-// For more information about EBS snapshots, see Amazon EBS Snapshots (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
+// For more information about EBS snapshots, see Amazon EBS snapshots (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSSnapshots.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -24099,7 +24129,7 @@ func (c *EC2) DescribeVolumeAttributeRequest(input *DescribeVolumeAttributeInput
 // Describes the specified attribute of the specified volume. You can specify
 // only one attribute at a time.
 //
-// For more information about EBS volumes, see Amazon EBS Volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html)
+// For more information about EBS volumes, see Amazon EBS volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -24195,19 +24225,19 @@ func (c *EC2) DescribeVolumeStatusRequest(input *DescribeVolumeStatusInput) (req
 // Status: Reflects the current status of the volume. The possible values are
 // ok, impaired , warning, or insufficient-data. If all checks pass, the overall
 // status of the volume is ok. If the check fails, the overall status is impaired.
-// If the status is insufficient-data, then the checks may still be taking place
-// on your volume at the time. We recommend that you retry the request. For
-// more information about volume status, see Monitoring the status of your volumes
-// (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-volume-status.html)
+// If the status is insufficient-data, then the checks might still be taking
+// place on your volume at the time. We recommend that you retry the request.
+// For more information about volume status, see Monitoring the status of your
+// volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-volume-status.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
-// Events: Reflect the cause of a volume status and may require you to take
+// Events: Reflect the cause of a volume status and might require you to take
 // action. For example, if your volume returns an impaired status, then the
 // volume event might be potential-data-inconsistency. This means that your
 // volume has been affected by an issue with the underlying host, has all I/O
-// operations disabled, and may have inconsistent data.
+// operations disabled, and might have inconsistent data.
 //
-// Actions: Reflect the actions you may have to take in response to an event.
+// Actions: Reflect the actions you might have to take in response to an event.
 // For example, if the status of the volume is impaired and the volume event
 // shows potential-data-inconsistency, then the action shows enable-volume-io.
 // This means that you may want to enable the I/O operations for the volume
@@ -24356,7 +24386,7 @@ func (c *EC2) DescribeVolumesRequest(input *DescribeVolumesInput) (req *request.
 // with a NextToken value that can be passed to a subsequent DescribeVolumes
 // request to retrieve the remaining results.
 //
-// For more information about EBS volumes, see Amazon EBS Volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html)
+// For more information about EBS volumes, see Amazon EBS volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumes.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -26480,7 +26510,7 @@ func (c *EC2) DisableEbsEncryptionByDefaultRequest(input *DisableEbsEncryptionBy
 // Disabling encryption by default does not change the encryption status of
 // your existing volumes.
 //
-// For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -27647,7 +27677,7 @@ func (c *EC2) EnableEbsEncryptionByDefaultRequest(input *EnableEbsEncryptionByDe
 //
 // After you enable encryption by default, the EBS volumes that you create are
 // are always encrypted, either using the default CMK or the CMK that you specified
-// when you created each volume. For more information, see Amazon EBS Encryption
+// when you created each volume. For more information, see Amazon EBS encryption
 // (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
@@ -29124,7 +29154,7 @@ func (c *EC2) GetEbsDefaultKmsKeyIdRequest(input *GetEbsDefaultKmsKeyIdInput) (r
 // for your account in this Region. You can change the default CMK for encryption
 // by default using ModifyEbsDefaultKmsKeyId or ResetEbsDefaultKmsKeyId.
 //
-// For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -29202,7 +29232,7 @@ func (c *EC2) GetEbsEncryptionByDefaultRequest(input *GetEbsEncryptionByDefaultI
 // Describes whether EBS encryption by default is enabled for your account in
 // the current Region.
 //
-// For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -31467,7 +31497,7 @@ func (c *EC2) ModifyEbsDefaultKmsKeyIdRequest(input *ModifyEbsDefaultKmsKeyIdInp
 // If you delete or disable the customer managed CMK that you specified for
 // use with encryption by default, your instances will fail to launch.
 //
-// For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -33611,7 +33641,7 @@ func (c *EC2) ModifyVolumeRequest(input *ModifyVolumeInput) (req *request.Reques
 //
 // You can modify several parameters of an existing EBS volume, including volume
 // size, volume type, and IOPS capacity. If your EBS volume is attached to a
-// current-generation EC2 instance type, you may be able to apply these changes
+// current-generation EC2 instance type, you might be able to apply these changes
 // without stopping the instance or detaching the volume from it. For more information
 // about modifying an EBS volume running Linux, see Modifying the size, IOPS,
 // or type of an EBS volume on Linux (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-expand-volume.html).
@@ -33632,11 +33662,11 @@ func (c *EC2) ModifyVolumeRequest(input *ModifyVolumeInput) (req *request.Reques
 // For information about tracking status changes using either method, see Monitoring
 // volume modifications (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-expand-volume.html#monitoring_mods).
 //
-// With previous-generation instance types, resizing an EBS volume may require
+// With previous-generation instance types, resizing an EBS volume might require
 // detaching and reattaching the volume or stopping and restarting the instance.
-// For more information, see Modifying the size, IOPS, or type of an EBS volume
-// on Linux (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-expand-volume.html)
-// and Modifying the size, IOPS, or type of an EBS volume on Windows (https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ebs-expand-volume.html).
+// For more information, see Amazon EBS Elastic Volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-modify-volume.html)
+// (Linux) or Amazon EBS Elastic Volumes (https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/ebs-modify-volume.html)
+// (Windows).
 //
 // If you reach the maximum volume modification rate per volume limit, you will
 // need to wait at least six hours before applying further modifications to
@@ -33874,8 +33904,8 @@ func (c *EC2) ModifyVpcEndpointRequest(input *ModifyVpcEndpointInput) (req *requ
 // ModifyVpcEndpoint API operation for Amazon Elastic Compute Cloud.
 //
 // Modifies attributes of a specified VPC endpoint. The attributes that you
-// can modify depend on the type of VPC endpoint (interface or gateway). For
-// more information, see VPC Endpoints (https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html)
+// can modify depend on the type of VPC endpoint (interface, gateway, or Gateway
+// Load Balancer). For more information, see VPC Endpoints (https://docs.aws.amazon.com/vpc/latest/userguide/vpc-endpoints.html)
 // in the Amazon Virtual Private Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -34027,9 +34057,9 @@ func (c *EC2) ModifyVpcEndpointServiceConfigurationRequest(input *ModifyVpcEndpo
 // ModifyVpcEndpointServiceConfiguration API operation for Amazon Elastic Compute Cloud.
 //
 // Modifies the attributes of your VPC endpoint service configuration. You can
-// change the Network Load Balancers for your service, and you can specify whether
-// acceptance is required for requests to connect to your endpoint service through
-// an interface VPC endpoint.
+// change the Network Load Balancers or Gateway Load Balancers for your service,
+// and you can specify whether acceptance is required for requests to connect
+// to your endpoint service through an interface VPC endpoint.
 //
 // If you set or modify the private DNS name, you must prove that you own the
 // private DNS domain name. For more information, see VPC Endpoint Service Private
@@ -36866,7 +36896,7 @@ func (c *EC2) ResetEbsDefaultKmsKeyIdRequest(input *ResetEbsDefaultKmsKeyIdInput
 //
 // After resetting the default CMK to the AWS managed CMK, you can continue
 // to encrypt by a customer managed CMK by specifying it when you create the
-// volume. For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+// volume. For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 // in the Amazon Elastic Compute Cloud User Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -46614,7 +46644,7 @@ type CopySnapshotInput struct {
 	// not enabled, enable encryption using this parameter. Otherwise, omit this
 	// parameter. Encrypted snapshots are encrypted, even if you omit this parameter
 	// and encryption by default is not enabled. You cannot set this parameter to
-	// false. For more information, see Amazon EBS Encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
+	// false. For more information, see Amazon EBS encryption (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html)
 	// in the Amazon Elastic Compute Cloud User Guide.
 	Encrypted *bool `locationName:"encrypted" type:"boolean"`
 
@@ -46640,14 +46670,14 @@ type CopySnapshotInput struct {
 
 	// When you copy an encrypted source snapshot using the Amazon EC2 Query API,
 	// you must supply a pre-signed URL. This parameter is optional for unencrypted
-	// snapshots. For more information, see Query Requests (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html).
+	// snapshots. For more information, see Query requests (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html).
 	//
 	// The PresignedUrl should use the snapshot source endpoint, the CopySnapshot
 	// action, and include the SourceRegion, SourceSnapshotId, and DestinationRegion
 	// parameters. The PresignedUrl must be signed using AWS Signature Version 4.
 	// Because EBS snapshots are stored in Amazon S3, the signing algorithm for
-	// this parameter uses the same logic that is described in Authenticating Requests
-	// by Using Query Parameters (AWS Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html)
+	// this parameter uses the same logic that is described in Authenticating Requests:
+	// Using Query Parameters (AWS Signature Version 4) (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html)
 	// in the Amazon Simple Storage Service API Reference. An invalid or improperly
 	// signed PresignedUrl will cause the copy operation to fail asynchronously,
 	// and the snapshot will move to an error state.
@@ -50687,6 +50717,9 @@ type CreateRouteInput struct {
 	// The ID of a transit gateway.
 	TransitGatewayId *string `type:"string"`
 
+	// The ID of a VPC endpoint. Supported for Gateway Load Balancer endpoints only.
+	VpcEndpointId *string `type:"string"`
+
 	// The ID of a VPC peering connection.
 	VpcPeeringConnectionId *string `locationName:"vpcPeeringConnectionId" type:"string"`
 }
@@ -50789,6 +50822,12 @@ func (s *CreateRouteInput) SetRouteTableId(v string) *CreateRouteInput {
 // SetTransitGatewayId sets the TransitGatewayId field's value.
 func (s *CreateRouteInput) SetTransitGatewayId(v string) *CreateRouteInput {
 	s.TransitGatewayId = &v
+	return s
+}
+
+// SetVpcEndpointId sets the VpcEndpointId field's value.
+func (s *CreateRouteInput) SetVpcEndpointId(v string) *CreateRouteInput {
+	s.VpcEndpointId = &v
 	return s
 }
 
@@ -52851,7 +52890,7 @@ type CreateVolumeInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `locationName:"dryRun" type:"boolean"`
 
-	// Specifies whether the volume should be encrypted. The effect of setting the
+	// Indicates whether the volume should be encrypted. The effect of setting the
 	// encryption state to true depends on the volume origin (new or from a snapshot),
 	// starting encryption state, ownership, and whether encryption by default is
 	// enabled. For more information, see Encryption by default (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html#encryption-by-default)
@@ -52861,15 +52900,26 @@ type CreateVolumeInput struct {
 	// EBS encryption. For more information, see Supported instance types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSEncryption.html#EBSEncryption_supported_instances).
 	Encrypted *bool `locationName:"encrypted" type:"boolean"`
 
-	// The number of I/O operations per second (IOPS) to provision for an io1 or
-	// io2 volume, with a maximum ratio of 50 IOPS/GiB for io1, and 500 IOPS/GiB
-	// for io2. Range is 100 to 64,000 IOPS for volumes in most Regions. Maximum
-	// IOPS of 64,000 is guaranteed only on Nitro-based instances (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
-	// Other instance families guarantee performance up to 32,000 IOPS. For more
-	// information, see Amazon EBS volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
-	// in the Amazon Elastic Compute Cloud User Guide.
+	// The number of I/O operations per second (IOPS). For gp3, io1, and io2 volumes,
+	// this represents the number of IOPS that are provisioned for the volume. For
+	// gp2 volumes, this represents the baseline performance of the volume and the
+	// rate at which the volume accumulates I/O credits for bursting.
 	//
-	// This parameter is valid only for Provisioned IOPS SSD (io1 and io2) volumes.
+	// The following are the supported values for each volume type:
+	//
+	//    * gp3: 3,000-16,000 IOPS
+	//
+	//    * io1: 100-64,000 IOPS
+	//
+	//    * io2: 100-64,000 IOPS
+	//
+	// For io1 and io2 volumes, we guarantee 64,000 IOPS only for Instances built
+	// on the Nitro System (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
+	// Other instance families guarantee performance up to 32,000 IOPS.
+	//
+	// This parameter is required for io1 and io2 volumes. The default for gp3 volumes
+	// is 3,000 IOPS. This parameter is not supported for gp2, st1, sc1, or standard
+	// volumes.
 	Iops *int64 `type:"integer"`
 
 	// The identifier of the AWS Key Management Service (AWS KMS) customer master
@@ -52892,10 +52942,11 @@ type CreateVolumeInput struct {
 	// fails.
 	KmsKeyId *string `type:"string"`
 
-	// Specifies whether to enable Amazon EBS Multi-Attach. If you enable Multi-Attach,
-	// you can attach the volume to up to 16 Nitro-based instances (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances)
-	// in the same Availability Zone. For more information, see Amazon EBS Multi-Attach
-	// (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes-multi.html)
+	// Indicates whether to enable Amazon EBS Multi-Attach. If you enable Multi-Attach,
+	// you can attach the volume to up to 16 Instances built on the Nitro System
+	// (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances)
+	// in the same Availability Zone. This parameter is supported with io1 volumes
+	// only. For more information, see Amazon EBS Multi-Attach (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ebs-volumes-multi.html)
 	// in the Amazon Elastic Compute Cloud User Guide.
 	MultiAttachEnabled *bool `type:"boolean"`
 
@@ -52903,14 +52954,19 @@ type CreateVolumeInput struct {
 	OutpostArn *string `type:"string"`
 
 	// The size of the volume, in GiBs. You must specify either a snapshot ID or
-	// a volume size.
+	// a volume size. If you specify a snapshot, the default is the snapshot size.
+	// You can specify a volume size that is equal to or larger than the snapshot
+	// size.
 	//
-	// Constraints: 1-16,384 for gp2, 4-16,384 for io1 and io2, 500-16,384 for st1,
-	// 500-16,384 for sc1, and 1-1,024 for standard. If you specify a snapshot,
-	// the volume size must be equal to or larger than the snapshot size.
+	// The following are the supported volumes sizes for each volume type:
 	//
-	// Default: If you're creating the volume from a snapshot and don't specify
-	// a volume size, the default is the snapshot size.
+	//    * gp2 and gp3: 1-16,384
+	//
+	//    * io1 and io2: 4-16,384
+	//
+	//    * st1 and sc1: 125-16,384
+	//
+	//    * standard: 1-1,024
 	Size *int64 `type:"integer"`
 
 	// The snapshot from which to create the volume. You must specify either a snapshot
@@ -52920,9 +52976,27 @@ type CreateVolumeInput struct {
 	// The tags to apply to the volume during creation.
 	TagSpecifications []*TagSpecification `locationName:"TagSpecification" locationNameList:"item" type:"list"`
 
-	// The volume type. This can be gp2 for General Purpose SSD, io1 or io2 for
-	// Provisioned IOPS SSD, st1 for Throughput Optimized HDD, sc1 for Cold HDD,
-	// or standard for Magnetic volumes.
+	// The throughput to provision for a volume, with a maximum of 1,000 MiB/s.
+	//
+	// This parameter is valid only for gp3 volumes.
+	//
+	// Valid Range: Minimum value of 125. Maximum value of 1000.
+	Throughput *int64 `type:"integer"`
+
+	// The volume type. This parameter can be one of the following values:
+	//
+	//    * General Purpose SSD: gp2 | gp3
+	//
+	//    * Provisioned IOPS SSD: io1 | io2
+	//
+	//    * Throughput Optimized HDD: st1
+	//
+	//    * Cold HDD: sc1
+	//
+	//    * Magnetic: standard
+	//
+	// For more information, see Amazon EBS volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
+	// in the Amazon Elastic Compute Cloud User Guide.
 	//
 	// Default: gp2
 	VolumeType *string `type:"string" enum:"VolumeType"`
@@ -53008,6 +53082,12 @@ func (s *CreateVolumeInput) SetSnapshotId(v string) *CreateVolumeInput {
 // SetTagSpecifications sets the TagSpecifications field's value.
 func (s *CreateVolumeInput) SetTagSpecifications(v []*TagSpecification) *CreateVolumeInput {
 	s.TagSpecifications = v
+	return s
+}
+
+// SetThroughput sets the Throughput field's value.
+func (s *CreateVolumeInput) SetThroughput(v int64) *CreateVolumeInput {
+	s.Throughput = &v
 	return s
 }
 
@@ -53224,9 +53304,10 @@ type CreateVpcEndpointInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `type:"boolean"`
 
-	// A policy to attach to the endpoint that controls access to the service. The
-	// policy must be in valid JSON format. If this parameter is not specified,
-	// we attach a default policy that allows full access to the service.
+	// (Interface and gateway endpoints) A policy to attach to the endpoint that
+	// controls access to the service. The policy must be in valid JSON format.
+	// If this parameter is not specified, we attach a default policy that allows
+	// full access to the service.
 	PolicyDocument *string `type:"string"`
 
 	// (Interface endpoint) Indicates whether to associate a private hosted zone
@@ -53257,8 +53338,9 @@ type CreateVpcEndpointInput struct {
 	// ServiceName is a required field
 	ServiceName *string `type:"string" required:"true"`
 
-	// (Interface endpoint) The ID of one or more subnets in which to create an
-	// endpoint network interface.
+	// (Interface and Gateway Load Balancer endpoints) The ID of one or more subnets
+	// in which to create an endpoint network interface. For a Gateway Load Balancer
+	// endpoint, you can specify one subnet only.
 	SubnetIds []*string `locationName:"SubnetId" locationNameList:"item" type:"list"`
 
 	// The tags to associate with the endpoint.
@@ -53418,13 +53500,15 @@ type CreateVpcEndpointServiceConfigurationInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `type:"boolean"`
 
+	// The Amazon Resource Names (ARNs) of one or more Gateway Load Balancers.
+	GatewayLoadBalancerArns []*string `locationName:"GatewayLoadBalancerArn" locationNameList:"item" type:"list"`
+
 	// The Amazon Resource Names (ARNs) of one or more Network Load Balancers for
 	// your service.
-	//
-	// NetworkLoadBalancerArns is a required field
-	NetworkLoadBalancerArns []*string `locationName:"NetworkLoadBalancerArn" locationNameList:"item" type:"list" required:"true"`
+	NetworkLoadBalancerArns []*string `locationName:"NetworkLoadBalancerArn" locationNameList:"item" type:"list"`
 
-	// The private DNS name to assign to the VPC endpoint service.
+	// (Interface endpoint configuration) The private DNS name to assign to the
+	// VPC endpoint service.
 	PrivateDnsName *string `type:"string"`
 
 	// The tags to associate with the service.
@@ -53439,19 +53523,6 @@ func (s CreateVpcEndpointServiceConfigurationInput) String() string {
 // GoString returns the string representation
 func (s CreateVpcEndpointServiceConfigurationInput) GoString() string {
 	return s.String()
-}
-
-// Validate inspects the fields of the type to determine if they are valid.
-func (s *CreateVpcEndpointServiceConfigurationInput) Validate() error {
-	invalidParams := request.ErrInvalidParams{Context: "CreateVpcEndpointServiceConfigurationInput"}
-	if s.NetworkLoadBalancerArns == nil {
-		invalidParams.Add(request.NewErrParamRequired("NetworkLoadBalancerArns"))
-	}
-
-	if invalidParams.Len() > 0 {
-		return invalidParams
-	}
-	return nil
 }
 
 // SetAcceptanceRequired sets the AcceptanceRequired field's value.
@@ -53469,6 +53540,12 @@ func (s *CreateVpcEndpointServiceConfigurationInput) SetClientToken(v string) *C
 // SetDryRun sets the DryRun field's value.
 func (s *CreateVpcEndpointServiceConfigurationInput) SetDryRun(v bool) *CreateVpcEndpointServiceConfigurationInput {
 	s.DryRun = &v
+	return s
+}
+
+// SetGatewayLoadBalancerArns sets the GatewayLoadBalancerArns field's value.
+func (s *CreateVpcEndpointServiceConfigurationInput) SetGatewayLoadBalancerArns(v []*string) *CreateVpcEndpointServiceConfigurationInput {
+	s.GatewayLoadBalancerArns = v
 	return s
 }
 
@@ -54789,8 +54866,14 @@ type DeleteFleetsInput struct {
 	// FleetIds is a required field
 	FleetIds []*string `locationName:"FleetId" type:"list" required:"true"`
 
-	// Indicates whether to terminate instances for an EC2 Fleet if it is deleted
-	// successfully.
+	// Indicates whether to terminate the instances when the EC2 Fleet is deleted.
+	// The default is to terminate the instances.
+	//
+	// To let the instances continue to run after the EC2 Fleet is deleted, specify
+	// NoTerminateInstances. Supported only for fleets of type maintain and request.
+	//
+	// For instant fleets, you cannot specify NoTerminateInstances. A deleted instant
+	// fleet with running instances is not supported.
 	//
 	// TerminateInstances is a required field
 	TerminateInstances *bool `type:"boolean" required:"true"`
@@ -68593,7 +68676,7 @@ type DescribeSnapshotsInput struct {
 	// results in a single page along with a NextToken response element. The remaining
 	// results of the initial request can be seen by sending another DescribeSnapshots
 	// request with the returned NextToken value. This value can be between 5 and
-	// 1000; if MaxResults is given a value larger than 1000, only 1000 results
+	// 1,000; if MaxResults is given a value larger than 1,000, only 1,000 results
 	// are returned. If this parameter is not used, then DescribeSnapshots returns
 	// all results. You cannot specify this parameter and the snapshot IDs parameter
 	// in the same request.
@@ -71135,8 +71218,8 @@ type DescribeVolumeStatusInput struct {
 	// paginated output. When this parameter is used, the request only returns MaxResults
 	// results in a single page along with a NextToken response element. The remaining
 	// results of the initial request can be seen by sending another request with
-	// the returned NextToken value. This value can be between 5 and 1000; if MaxResults
-	// is given a value larger than 1000, only 1000 results are returned. If this
+	// the returned NextToken value. This value can be between 5 and 1,000; if MaxResults
+	// is given a value larger than 1,000, only 1,000 results are returned. If this
 	// parameter is not used, then DescribeVolumeStatus returns all results. You
 	// cannot specify this parameter and the volume IDs parameter in the same request.
 	MaxResults *int64 `type:"integer"`
@@ -71281,9 +71364,8 @@ type DescribeVolumesInput struct {
 	//
 	//    * volume-id - The volume ID.
 	//
-	//    * volume-type - The Amazon EBS volume type. This can be gp2 for General
-	//    Purpose SSD, io1 or io2 for Provisioned IOPS SSD, st1 for Throughput Optimized
-	//    HDD, sc1 for Cold HDD, or standard for Magnetic volumes.
+	//    * volume-type - The Amazon EBS volume type (gp2 | gp3 | io1 | io2 | st1
+	//    | sc1| standard)
 	Filters []*Filter `locationName:"Filter" locationNameList:"Filter" type:"list"`
 
 	// The maximum number of volume results returned by DescribeVolumes in paginated
@@ -72370,6 +72452,9 @@ type DescribeVpcEndpointsInput struct {
 	//
 	//    * vpc-endpoint-state - The state of the endpoint (pendingAcceptance |
 	//    pending | available | deleting | deleted | rejected | failed).
+	//
+	//    * vpc-endpoint-type - The type of VPC endpoint (Interface | Gateway |
+	//    GatewayLoadBalancer).
 	//
 	//    * tag:<key> - The key/value combination of a tag assigned to the resource.
 	//    Use the tag key in the filter name and the tag value as the filter value.
@@ -75224,22 +75309,25 @@ type EbsBlockDevice struct {
 	// This parameter is not returned by .
 	Encrypted *bool `locationName:"encrypted" type:"boolean"`
 
-	// The number of I/O operations per second (IOPS) that the volume supports.
-	// For io1 and io2 volumes, this represents the number of IOPS that are provisioned
-	// for the volume. For gp2 volumes, this represents the baseline performance
-	// of the volume and the rate at which the volume accumulates I/O credits for
-	// bursting. For more information, see Amazon EBS volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
-	// in the Amazon Elastic Compute Cloud User Guide.
+	// The number of I/O operations per second (IOPS). For gp3, io1, and io2 volumes,
+	// this represents the number of IOPS that are provisioned for the volume. For
+	// gp2 volumes, this represents the baseline performance of the volume and the
+	// rate at which the volume accumulates I/O credits for bursting.
 	//
-	// Constraints: Range is 100-16,000 IOPS for gp2 volumes and 100 to 64,000 IOPS
-	// for io1 and io2 volumes in most Regions. Maximum io1 and io2 IOPS of 64,000
-	// is guaranteed only on Nitro-based instances (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
-	// Other instance families guarantee performance up to 32,000 IOPS. For more
-	// information, see Amazon EBS Volume Types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
-	// in the Amazon Elastic Compute Cloud User Guide.
+	// The following are the supported values for each volume type:
 	//
-	// Condition: This parameter is required for requests to create io1 and io2
-	// volumes; it is not used in requests to create gp2, st1, sc1, or standard
+	//    * gp3: 3,000-16,000 IOPS
+	//
+	//    * io1: 100-64,000 IOPS
+	//
+	//    * io2: 100-64,000 IOPS
+	//
+	// For io1 and io2 volumes, we guarantee 64,000 IOPS only for Instances built
+	// on the Nitro System (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
+	// Other instance families guarantee performance up to 32,000 IOPS.
+	//
+	// This parameter is required for io1 and io2 volumes. The default for gp3 volumes
+	// is 3,000 IOPS. This parameter is not supported for gp2, st1, sc1, or standard
 	// volumes.
 	Iops *int64 `locationName:"iops" type:"integer"`
 
@@ -75255,23 +75343,34 @@ type EbsBlockDevice struct {
 	// The ID of the snapshot.
 	SnapshotId *string `locationName:"snapshotId" type:"string"`
 
-	// The size of the volume, in GiB.
+	// The throughput that the volume supports, in MiB/s.
 	//
-	// Default: If you're creating the volume from a snapshot and don't specify
-	// a volume size, the default is the snapshot size.
+	// This parameter is valid only for gp3 volumes.
 	//
-	// Constraints: 1-16384 for General Purpose SSD (gp2), 4-16384 for Provisioned
-	// IOPS SSD (io1 and io2), 500-16384 for Throughput Optimized HDD (st1), 500-16384
-	// for Cold HDD (sc1), and 1-1024 for Magnetic (standard) volumes. If you specify
-	// a snapshot, the volume size must be equal to or larger than the snapshot
+	// Valid Range: Minimum value of 125. Maximum value of 1000.
+	Throughput *int64 `locationName:"throughput" type:"integer"`
+
+	// The size of the volume, in GiBs. You must specify either a snapshot ID or
+	// a volume size. If you specify a snapshot, the default is the snapshot size.
+	// You can specify a volume size that is equal to or larger than the snapshot
 	// size.
+	//
+	// The following are the supported volumes sizes for each volume type:
+	//
+	//    * gp2 and gp3:1-16,384
+	//
+	//    * io1 and io2: 4-16,384
+	//
+	//    * st1: 500-16,384
+	//
+	//    * sc1: 500-16,384
+	//
+	//    * standard: 1-1,024
 	VolumeSize *int64 `locationName:"volumeSize" type:"integer"`
 
-	// The volume type. If you set the type to io1 or io2, you must also specify
-	// the Iops parameter. If you set the type to gp2, st1, sc1, or standard, you
-	// must omit the Iops parameter.
-	//
-	// Default: gp2
+	// The volume type. For more information, see Amazon EBS volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
+	// in the Amazon Elastic Compute Cloud User Guide. If the volume type is io1
+	// or io2, you must specify the IOPS that the volume supports.
 	VolumeType *string `locationName:"volumeType" type:"string" enum:"VolumeType"`
 }
 
@@ -75312,6 +75411,12 @@ func (s *EbsBlockDevice) SetKmsKeyId(v string) *EbsBlockDevice {
 // SetSnapshotId sets the SnapshotId field's value.
 func (s *EbsBlockDevice) SetSnapshotId(v string) *EbsBlockDevice {
 	s.SnapshotId = &v
+	return s
+}
+
+// SetThroughput sets the Throughput field's value.
+func (s *EbsBlockDevice) SetThroughput(v int64) *EbsBlockDevice {
+	s.Throughput = &v
 	return s
 }
 
@@ -78421,9 +78526,8 @@ type FleetSpotCapacityRebalance struct {
 	// specify launch. Only available for fleets of type maintain.
 	//
 	// When a replacement instance is launched, the instance marked for rebalance
-	// is not automatically terminated. You can terminate it, or you can wait until
-	// Amazon EC2 interrupts it. You are charged for both instances while they are
-	// running.
+	// is not automatically terminated. You can terminate it, or you can leave it
+	// running. You are charged for both instances while they are running.
 	ReplacementStrategy *string `locationName:"replacementStrategy" type:"string" enum:"FleetReplacementStrategy"`
 }
 
@@ -78457,9 +78561,8 @@ type FleetSpotCapacityRebalanceRequest struct {
 	// specify launch. You must specify a value, otherwise you get an error.
 	//
 	// When a replacement instance is launched, the instance marked for rebalance
-	// is not automatically terminated. You can terminate it, or you can wait until
-	// Amazon EC2 interrupts it. You are charged for all instances while they are
-	// running.
+	// is not automatically terminated. You can terminate it, or you can leave it
+	// running. You are charged for all instances while they are running.
 	ReplacementStrategy *string `type:"string" enum:"FleetReplacementStrategy"`
 }
 
@@ -87667,6 +87770,9 @@ type LaunchTemplateEbsBlockDevice struct {
 	// The ID of the snapshot.
 	SnapshotId *string `locationName:"snapshotId" type:"string"`
 
+	// The throughput that the volume supports, in MiB/s.
+	Throughput *int64 `locationName:"throughput" type:"integer"`
+
 	// The size of the volume, in GiB.
 	VolumeSize *int64 `locationName:"volumeSize" type:"integer"`
 
@@ -87714,6 +87820,12 @@ func (s *LaunchTemplateEbsBlockDevice) SetSnapshotId(v string) *LaunchTemplateEb
 	return s
 }
 
+// SetThroughput sets the Throughput field's value.
+func (s *LaunchTemplateEbsBlockDevice) SetThroughput(v int64) *LaunchTemplateEbsBlockDevice {
+	s.Throughput = &v
+	return s
+}
+
 // SetVolumeSize sets the VolumeSize field's value.
 func (s *LaunchTemplateEbsBlockDevice) SetVolumeSize(v int64) *LaunchTemplateEbsBlockDevice {
 	s.VolumeSize = &v
@@ -87738,15 +87850,26 @@ type LaunchTemplateEbsBlockDeviceRequest struct {
 	// a volume from a snapshot, you can't specify an encryption value.
 	Encrypted *bool `type:"boolean"`
 
-	// The number of I/O operations per second (IOPS) to provision for an io1 or
-	// io2 volume, with a maximum ratio of 50 IOPS/GiB for io1, and 500 IOPS/GiB
-	// for io2. Range is 100 to 64,000 IOPS for volumes in most Regions. Maximum
-	// IOPS of 64,000 is guaranteed only on Nitro-based instances (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
-	// Other instance families guarantee performance up to 32,000 IOPS. For more
-	// information, see Amazon EBS Volume Types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
-	// in the Amazon Elastic Compute Cloud User Guide.
+	// The number of I/O operations per second (IOPS). For gp3, io1, and io2 volumes,
+	// this represents the number of IOPS that are provisioned for the volume. For
+	// gp2 volumes, this represents the baseline performance of the volume and the
+	// rate at which the volume accumulates I/O credits for bursting.
 	//
-	// This parameter is valid only for Provisioned IOPS SSD (io1 and io2) volumes.
+	// The following are the supported values for each volume type:
+	//
+	//    * gp3: 3,000-16,000 IOPS
+	//
+	//    * io1: 100-64,000 IOPS
+	//
+	//    * io2: 100-64,000 IOPS
+	//
+	// For io1 and io2 volumes, we guarantee 64,000 IOPS only for Instances built
+	// on the Nitro System (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
+	// Other instance families guarantee performance up to 32,000 IOPS.
+	//
+	// This parameter is required for io1 and io2 volumes. The default for gp3 volumes
+	// is 3,000 IOPS. This parameter is not supported for gp2, st1, sc1, or standard
+	// volumes.
 	Iops *int64 `type:"integer"`
 
 	// The ARN of the symmetric AWS Key Management Service (AWS KMS) CMK used for
@@ -87756,13 +87879,30 @@ type LaunchTemplateEbsBlockDeviceRequest struct {
 	// The ID of the snapshot.
 	SnapshotId *string `type:"string"`
 
-	// The size of the volume, in GiB.
+	// The throughput to provision for a gp3 volume, with a maximum of 1,000 MiB/s.
 	//
-	// Default: If you're creating the volume from a snapshot and don't specify
-	// a volume size, the default is the snapshot size.
+	// Valid Range: Minimum value of 125. Maximum value of 1000.
+	Throughput *int64 `type:"integer"`
+
+	// The size of the volume, in GiBs. You must specify either a snapshot ID or
+	// a volume size. If you specify a snapshot, the default is the snapshot size.
+	// You can specify a volume size that is equal to or larger than the snapshot
+	// size.
+	//
+	// The following are the supported volumes sizes for each volume type:
+	//
+	//    * gp2 and gp3: 1-16,384
+	//
+	//    * io1 and io2: 4-16,384
+	//
+	//    * st1 and sc1: 125-16,384
+	//
+	//    * standard: 1-1,024
 	VolumeSize *int64 `type:"integer"`
 
-	// The volume type.
+	// The volume type. The default is gp2. For more information, see Amazon EBS
+	// volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
+	// in the Amazon Elastic Compute Cloud User Guide.
 	VolumeType *string `type:"string" enum:"VolumeType"`
 }
 
@@ -87803,6 +87943,12 @@ func (s *LaunchTemplateEbsBlockDeviceRequest) SetKmsKeyId(v string) *LaunchTempl
 // SetSnapshotId sets the SnapshotId field's value.
 func (s *LaunchTemplateEbsBlockDeviceRequest) SetSnapshotId(v string) *LaunchTemplateEbsBlockDeviceRequest {
 	s.SnapshotId = &v
+	return s
+}
+
+// SetThroughput sets the Throughput field's value.
+func (s *LaunchTemplateEbsBlockDeviceRequest) SetThroughput(v int64) *LaunchTemplateEbsBlockDeviceRequest {
+	s.Throughput = &v
 	return s
 }
 
@@ -93867,27 +94013,52 @@ type ModifyVolumeInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `type:"boolean"`
 
-	// The target IOPS rate of the volume.
+	// The target IOPS rate of the volume. This parameter is valid only for gp3,
+	// io1, and io2 volumes.
 	//
-	// This is only valid for Provisioned IOPS SSD (io1 and io2) volumes. For moreinformation,
-	// see Provisioned IOPS SSD (io1 and io2) volumes (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_piops).
+	// The following are the supported values for each volume type:
+	//
+	//    * gp3: 3,000-16,000 IOPS
+	//
+	//    * io1: 100-64,000 IOPS
+	//
+	//    * io2: 100-64,000 IOPS
 	//
 	// Default: If no IOPS value is specified, the existing value is retained.
 	Iops *int64 `type:"integer"`
 
 	// The target size of the volume, in GiB. The target volume size must be greater
-	// than or equal to than the existing size of the volume. For information about
-	// available EBS volume sizes, see Amazon EBS Volume Types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html).
+	// than or equal to the existing size of the volume.
+	//
+	// The following are the supported volumes sizes for each volume type:
+	//
+	//    * gp2 and gp3: 1-16,384
+	//
+	//    * io1 and io2: 4-16,384
+	//
+	//    * st1 and sc1: 125-16,384
+	//
+	//    * standard: 1-1,024
 	//
 	// Default: If no size is specified, the existing size is retained.
 	Size *int64 `type:"integer"`
+
+	// The target throughput of the volume, in MiB/s. This parameter is valid only
+	// for gp3 volumes. The maximum value is 1,000.
+	//
+	// Default: If no throughput value is specified, the existing value is retained.
+	//
+	// Valid Range: Minimum value of 125. Maximum value of 1000.
+	Throughput *int64 `type:"integer"`
 
 	// The ID of the volume.
 	//
 	// VolumeId is a required field
 	VolumeId *string `type:"string" required:"true"`
 
-	// The target EBS volume type of the volume.
+	// The target EBS volume type of the volume. For more information, see Amazon
+	// EBS volume types (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
+	// in the Amazon Elastic Compute Cloud User Guide.
 	//
 	// Default: If no type is specified, the existing type is retained.
 	VolumeType *string `type:"string" enum:"VolumeType"`
@@ -93931,6 +94102,12 @@ func (s *ModifyVolumeInput) SetIops(v int64) *ModifyVolumeInput {
 // SetSize sets the Size field's value.
 func (s *ModifyVolumeInput) SetSize(v int64) *ModifyVolumeInput {
 	s.Size = &v
+	return s
+}
+
+// SetThroughput sets the Throughput field's value.
+func (s *ModifyVolumeInput) SetThroughput(v int64) *ModifyVolumeInput {
+	s.Throughput = &v
 	return s
 }
 
@@ -94154,7 +94331,9 @@ type ModifyVpcEndpointInput struct {
 	// network interface.
 	AddSecurityGroupIds []*string `locationName:"AddSecurityGroupId" locationNameList:"item" type:"list"`
 
-	// (Interface endpoint) One or more subnet IDs in which to serve the endpoint.
+	// (Interface and Gateway Load Balancer endpoints) One or more subnet IDs in
+	// which to serve the endpoint. For a Gateway Load Balancer endpoint, you can
+	// specify only one subnet.
 	AddSubnetIds []*string `locationName:"AddSubnetId" locationNameList:"item" type:"list"`
 
 	// Checks whether you have the required permissions for the action, without
@@ -94163,8 +94342,8 @@ type ModifyVpcEndpointInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `type:"boolean"`
 
-	// A policy to attach to the endpoint that controls access to the service. The
-	// policy must be in valid JSON format.
+	// (Interface and gateway endpoints) A policy to attach to the endpoint that
+	// controls access to the service. The policy must be in valid JSON format.
 	PolicyDocument *string `type:"string"`
 
 	// (Interface endpoint) Indicates whether a private hosted zone is associated
@@ -94310,6 +94489,10 @@ type ModifyVpcEndpointServiceConfigurationInput struct {
 	// accepted.
 	AcceptanceRequired *bool `type:"boolean"`
 
+	// The Amazon Resource Names (ARNs) of Gateway Load Balancers to add to your
+	// service configuration.
+	AddGatewayLoadBalancerArns []*string `locationName:"AddGatewayLoadBalancerArn" locationNameList:"item" type:"list"`
+
 	// The Amazon Resource Names (ARNs) of Network Load Balancers to add to your
 	// service configuration.
 	AddNetworkLoadBalancerArns []*string `locationName:"AddNetworkLoadBalancerArn" locationNameList:"item" type:"list"`
@@ -94320,14 +94503,20 @@ type ModifyVpcEndpointServiceConfigurationInput struct {
 	// it is UnauthorizedOperation.
 	DryRun *bool `type:"boolean"`
 
-	// The private DNS name to assign to the endpoint service.
+	// (Interface endpoint configuration) The private DNS name to assign to the
+	// endpoint service.
 	PrivateDnsName *string `type:"string"`
+
+	// The Amazon Resource Names (ARNs) of Gateway Load Balancers to remove from
+	// your service configuration.
+	RemoveGatewayLoadBalancerArns []*string `locationName:"RemoveGatewayLoadBalancerArn" locationNameList:"item" type:"list"`
 
 	// The Amazon Resource Names (ARNs) of Network Load Balancers to remove from
 	// your service configuration.
 	RemoveNetworkLoadBalancerArns []*string `locationName:"RemoveNetworkLoadBalancerArn" locationNameList:"item" type:"list"`
 
-	// Removes the private DNS name of the endpoint service.
+	// (Interface endpoint configuration) Removes the private DNS name of the endpoint
+	// service.
 	RemovePrivateDnsName *bool `type:"boolean"`
 
 	// The ID of the service.
@@ -94365,6 +94554,12 @@ func (s *ModifyVpcEndpointServiceConfigurationInput) SetAcceptanceRequired(v boo
 	return s
 }
 
+// SetAddGatewayLoadBalancerArns sets the AddGatewayLoadBalancerArns field's value.
+func (s *ModifyVpcEndpointServiceConfigurationInput) SetAddGatewayLoadBalancerArns(v []*string) *ModifyVpcEndpointServiceConfigurationInput {
+	s.AddGatewayLoadBalancerArns = v
+	return s
+}
+
 // SetAddNetworkLoadBalancerArns sets the AddNetworkLoadBalancerArns field's value.
 func (s *ModifyVpcEndpointServiceConfigurationInput) SetAddNetworkLoadBalancerArns(v []*string) *ModifyVpcEndpointServiceConfigurationInput {
 	s.AddNetworkLoadBalancerArns = v
@@ -94380,6 +94575,12 @@ func (s *ModifyVpcEndpointServiceConfigurationInput) SetDryRun(v bool) *ModifyVp
 // SetPrivateDnsName sets the PrivateDnsName field's value.
 func (s *ModifyVpcEndpointServiceConfigurationInput) SetPrivateDnsName(v string) *ModifyVpcEndpointServiceConfigurationInput {
 	s.PrivateDnsName = &v
+	return s
+}
+
+// SetRemoveGatewayLoadBalancerArns sets the RemoveGatewayLoadBalancerArns field's value.
+func (s *ModifyVpcEndpointServiceConfigurationInput) SetRemoveGatewayLoadBalancerArns(v []*string) *ModifyVpcEndpointServiceConfigurationInput {
+	s.RemoveGatewayLoadBalancerArns = v
 	return s
 }
 
@@ -98038,6 +98239,30 @@ func (s *PrincipalIdFormat) SetStatuses(v []*IdFormat) *PrincipalIdFormat {
 	return s
 }
 
+// Information about the Private DNS name for interface endpoints.
+type PrivateDnsDetails struct {
+	_ struct{} `type:"structure"`
+
+	// The private DNS name assigned to the VPC endpoint service.
+	PrivateDnsName *string `locationName:"privateDnsName" type:"string"`
+}
+
+// String returns the string representation
+func (s PrivateDnsDetails) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation
+func (s PrivateDnsDetails) GoString() string {
+	return s.String()
+}
+
+// SetPrivateDnsName sets the PrivateDnsName field's value.
+func (s *PrivateDnsDetails) SetPrivateDnsName(v string) *PrivateDnsDetails {
+	s.PrivateDnsName = &v
+	return s
+}
+
 // Information about the private DNS name for the service endpoint. For more
 // information about these parameters, see VPC Endpoint Service Private DNS
 // Name Verification (https://docs.aws.amazon.com/vpc/latest/userguide/ndpoint-services-dns-validation.html)
@@ -100511,6 +100736,9 @@ type ReplaceRouteInput struct {
 	// The ID of a transit gateway.
 	TransitGatewayId *string `type:"string"`
 
+	// The ID of a VPC endpoint. Supported for Gateway Load Balancer endpoints only.
+	VpcEndpointId *string `type:"string"`
+
 	// The ID of a VPC peering connection.
 	VpcPeeringConnectionId *string `locationName:"vpcPeeringConnectionId" type:"string"`
 }
@@ -100619,6 +100847,12 @@ func (s *ReplaceRouteInput) SetRouteTableId(v string) *ReplaceRouteInput {
 // SetTransitGatewayId sets the TransitGatewayId field's value.
 func (s *ReplaceRouteInput) SetTransitGatewayId(v string) *ReplaceRouteInput {
 	s.TransitGatewayId = &v
+	return s
+}
+
+// SetVpcEndpointId sets the VpcEndpointId field's value.
+func (s *ReplaceRouteInput) SetVpcEndpointId(v string) *ReplaceRouteInput {
+	s.VpcEndpointId = &v
 	return s
 }
 
@@ -106736,6 +106970,9 @@ type ServiceConfiguration struct {
 	// The DNS names for the service.
 	BaseEndpointDnsNames []*string `locationName:"baseEndpointDnsNameSet" locationNameList:"item" type:"list"`
 
+	// The Amazon Resource Names (ARNs) of the Gateway Load Balancers for the service.
+	GatewayLoadBalancerArns []*string `locationName:"gatewayLoadBalancerArnSet" locationNameList:"item" type:"list"`
+
 	// Indicates whether the service manages its VPC endpoints. Management of the
 	// service VPC endpoints using the VPC endpoint API is restricted.
 	ManagesVpcEndpoints *bool `locationName:"managesVpcEndpoints" type:"boolean"`
@@ -106790,6 +107027,12 @@ func (s *ServiceConfiguration) SetAvailabilityZones(v []*string) *ServiceConfigu
 // SetBaseEndpointDnsNames sets the BaseEndpointDnsNames field's value.
 func (s *ServiceConfiguration) SetBaseEndpointDnsNames(v []*string) *ServiceConfiguration {
 	s.BaseEndpointDnsNames = v
+	return s
+}
+
+// SetGatewayLoadBalancerArns sets the GatewayLoadBalancerArns field's value.
+func (s *ServiceConfiguration) SetGatewayLoadBalancerArns(v []*string) *ServiceConfiguration {
+	s.GatewayLoadBalancerArns = v
 	return s
 }
 
@@ -106877,6 +107120,9 @@ type ServiceDetail struct {
 	// is not verified.
 	PrivateDnsNameVerificationState *string `locationName:"privateDnsNameVerificationState" type:"string" enum:"DnsNameState"`
 
+	// The private DNS names assigned to the VPC endpoint service.
+	PrivateDnsNames []*PrivateDnsDetails `locationName:"privateDnsNameSet" locationNameList:"item" type:"list"`
+
 	// The ID of the endpoint service.
 	ServiceId *string `locationName:"serviceId" type:"string"`
 
@@ -106942,6 +107188,12 @@ func (s *ServiceDetail) SetPrivateDnsName(v string) *ServiceDetail {
 // SetPrivateDnsNameVerificationState sets the PrivateDnsNameVerificationState field's value.
 func (s *ServiceDetail) SetPrivateDnsNameVerificationState(v string) *ServiceDetail {
 	s.PrivateDnsNameVerificationState = &v
+	return s
+}
+
+// SetPrivateDnsNames sets the PrivateDnsNames field's value.
+func (s *ServiceDetail) SetPrivateDnsNames(v []*PrivateDnsDetails) *ServiceDetail {
+	s.PrivateDnsNames = v
 	return s
 }
 
@@ -107640,9 +107892,8 @@ type SpotCapacityRebalance struct {
 	// launch.
 	//
 	// When a replacement instance is launched, the instance marked for rebalance
-	// is not automatically terminated. You can terminate it, or you can wait until
-	// Amazon EC2 interrupts it. You are charged for all instances while they are
-	// running.
+	// is not automatically terminated. You can terminate it, or you can leave it
+	// running. You are charged for all instances while they are running.
 	ReplacementStrategy *string `locationName:"replacementStrategy" type:"string" enum:"ReplacementStrategy"`
 }
 
@@ -113953,22 +114204,10 @@ type Volume struct {
 	// Indicates whether the volume was created using fast snapshot restore.
 	FastRestored *bool `locationName:"fastRestored" type:"boolean"`
 
-	// The number of I/O operations per second (IOPS) that the volume supports.
-	// For Provisioned IOPS SSD volumes, this represents the number of IOPS that
-	// are provisioned for the volume. For General Purpose SSD volumes, this represents
-	// the baseline performance of the volume and the rate at which the volume accumulates
-	// I/O credits for bursting. For more information, see Amazon EBS volume types
-	// (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
-	// in the Amazon Elastic Compute Cloud User Guide.
-	//
-	// Constraints: Range is 100-16,000 IOPS for gp2 volumes and 100 to 64,000 IOPS
-	// for io1 and io2 volumes, in most Regions. The maximum IOPS for io1 and io2
-	// of 64,000 is guaranteed only on Nitro-based instances (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html#ec2-nitro-instances).
-	// Other instance families guarantee performance up to 32,000 IOPS.
-	//
-	// Condition: This parameter is required for requests to create io1 and io2
-	// volumes; it is not used in requests to create gp2, st1, sc1, or standard
-	// volumes.
+	// The number of I/O operations per second (IOPS). For gp3, io1, and io2 volumes,
+	// this represents the number of IOPS that are provisioned for the volume. For
+	// gp2 volumes, this represents the baseline performance of the volume and the
+	// rate at which the volume accumulates I/O credits for bursting.
 	Iops *int64 `locationName:"iops" type:"integer"`
 
 	// The Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS)
@@ -113994,12 +114233,13 @@ type Volume struct {
 	// Any tags assigned to the volume.
 	Tags []*Tag `locationName:"tagSet" locationNameList:"item" type:"list"`
 
+	// The throughput that the volume supports, in MiB/s.
+	Throughput *int64 `locationName:"throughput" type:"integer"`
+
 	// The ID of the volume.
 	VolumeId *string `locationName:"volumeId" type:"string"`
 
-	// The volume type. This can be gp2 for General Purpose SSD, io1 or io2 for
-	// Provisioned IOPS SSD, st1 for Throughput Optimized HDD, sc1 for Cold HDD,
-	// or standard for Magnetic volumes.
+	// The volume type.
 	VolumeType *string `locationName:"volumeType" type:"string" enum:"VolumeType"`
 }
 
@@ -114088,6 +114328,12 @@ func (s *Volume) SetState(v string) *Volume {
 // SetTags sets the Tags field's value.
 func (s *Volume) SetTags(v []*Tag) *Volume {
 	s.Tags = v
+	return s
+}
+
+// SetThroughput sets the Throughput field's value.
+func (s *Volume) SetThroughput(v int64) *Volume {
+	s.Throughput = &v
 	return s
 }
 
@@ -114230,6 +114476,9 @@ type VolumeModification struct {
 	// The original size of the volume, in GiB.
 	OriginalSize *int64 `locationName:"originalSize" type:"integer"`
 
+	// The original throughput of the volume, in MiB/s.
+	OriginalThroughput *int64 `locationName:"originalThroughput" type:"integer"`
+
 	// The original EBS volume type of the volume.
 	OriginalVolumeType *string `locationName:"originalVolumeType" type:"string" enum:"VolumeType"`
 
@@ -114247,6 +114496,9 @@ type VolumeModification struct {
 
 	// The target size of the volume, in GiB.
 	TargetSize *int64 `locationName:"targetSize" type:"integer"`
+
+	// The target throughput of the volume, in MiB/s.
+	TargetThroughput *int64 `locationName:"targetThroughput" type:"integer"`
 
 	// The target EBS volume type of the volume.
 	TargetVolumeType *string `locationName:"targetVolumeType" type:"string" enum:"VolumeType"`
@@ -114289,6 +114541,12 @@ func (s *VolumeModification) SetOriginalSize(v int64) *VolumeModification {
 	return s
 }
 
+// SetOriginalThroughput sets the OriginalThroughput field's value.
+func (s *VolumeModification) SetOriginalThroughput(v int64) *VolumeModification {
+	s.OriginalThroughput = &v
+	return s
+}
+
 // SetOriginalVolumeType sets the OriginalVolumeType field's value.
 func (s *VolumeModification) SetOriginalVolumeType(v string) *VolumeModification {
 	s.OriginalVolumeType = &v
@@ -114322,6 +114580,12 @@ func (s *VolumeModification) SetTargetIops(v int64) *VolumeModification {
 // SetTargetSize sets the TargetSize field's value.
 func (s *VolumeModification) SetTargetSize(v int64) *VolumeModification {
 	s.TargetSize = &v
+	return s
+}
+
+// SetTargetThroughput sets the TargetThroughput field's value.
+func (s *VolumeModification) SetTargetThroughput(v int64) *VolumeModification {
+	s.TargetThroughput = &v
 	return s
 }
 
@@ -115069,6 +115333,9 @@ type VpcEndpointConnection struct {
 	// The DNS entries for the VPC endpoint.
 	DnsEntries []*DnsEntry `locationName:"dnsEntrySet" locationNameList:"item" type:"list"`
 
+	// The Amazon Resource Names (ARNs) of the Gateway Load Balancers for the service.
+	GatewayLoadBalancerArns []*string `locationName:"gatewayLoadBalancerArnSet" locationNameList:"item" type:"list"`
+
 	// The Amazon Resource Names (ARNs) of the network load balancers for the service.
 	NetworkLoadBalancerArns []*string `locationName:"networkLoadBalancerArnSet" locationNameList:"item" type:"list"`
 
@@ -115104,6 +115371,12 @@ func (s *VpcEndpointConnection) SetCreationTimestamp(v time.Time) *VpcEndpointCo
 // SetDnsEntries sets the DnsEntries field's value.
 func (s *VpcEndpointConnection) SetDnsEntries(v []*DnsEntry) *VpcEndpointConnection {
 	s.DnsEntries = v
+	return s
+}
+
+// SetGatewayLoadBalancerArns sets the GatewayLoadBalancerArns field's value.
+func (s *VpcEndpointConnection) SetGatewayLoadBalancerArns(v []*string) *VpcEndpointConnection {
+	s.GatewayLoadBalancerArns = v
 	return s
 }
 
@@ -118407,6 +118680,33 @@ const (
 	// InstanceTypeR5a24xlarge is a InstanceType enum value
 	InstanceTypeR5a24xlarge = "r5a.24xlarge"
 
+	// InstanceTypeR5bLarge is a InstanceType enum value
+	InstanceTypeR5bLarge = "r5b.large"
+
+	// InstanceTypeR5bXlarge is a InstanceType enum value
+	InstanceTypeR5bXlarge = "r5b.xlarge"
+
+	// InstanceTypeR5b2xlarge is a InstanceType enum value
+	InstanceTypeR5b2xlarge = "r5b.2xlarge"
+
+	// InstanceTypeR5b4xlarge is a InstanceType enum value
+	InstanceTypeR5b4xlarge = "r5b.4xlarge"
+
+	// InstanceTypeR5b8xlarge is a InstanceType enum value
+	InstanceTypeR5b8xlarge = "r5b.8xlarge"
+
+	// InstanceTypeR5b12xlarge is a InstanceType enum value
+	InstanceTypeR5b12xlarge = "r5b.12xlarge"
+
+	// InstanceTypeR5b16xlarge is a InstanceType enum value
+	InstanceTypeR5b16xlarge = "r5b.16xlarge"
+
+	// InstanceTypeR5b24xlarge is a InstanceType enum value
+	InstanceTypeR5b24xlarge = "r5b.24xlarge"
+
+	// InstanceTypeR5bMetal is a InstanceType enum value
+	InstanceTypeR5bMetal = "r5b.metal"
+
 	// InstanceTypeR5dLarge is a InstanceType enum value
 	InstanceTypeR5dLarge = "r5d.large"
 
@@ -118893,6 +119193,36 @@ const (
 	// InstanceTypeD28xlarge is a InstanceType enum value
 	InstanceTypeD28xlarge = "d2.8xlarge"
 
+	// InstanceTypeD3Xlarge is a InstanceType enum value
+	InstanceTypeD3Xlarge = "d3.xlarge"
+
+	// InstanceTypeD32xlarge is a InstanceType enum value
+	InstanceTypeD32xlarge = "d3.2xlarge"
+
+	// InstanceTypeD34xlarge is a InstanceType enum value
+	InstanceTypeD34xlarge = "d3.4xlarge"
+
+	// InstanceTypeD38xlarge is a InstanceType enum value
+	InstanceTypeD38xlarge = "d3.8xlarge"
+
+	// InstanceTypeD3enXlarge is a InstanceType enum value
+	InstanceTypeD3enXlarge = "d3en.xlarge"
+
+	// InstanceTypeD3en2xlarge is a InstanceType enum value
+	InstanceTypeD3en2xlarge = "d3en.2xlarge"
+
+	// InstanceTypeD3en4xlarge is a InstanceType enum value
+	InstanceTypeD3en4xlarge = "d3en.4xlarge"
+
+	// InstanceTypeD3en6xlarge is a InstanceType enum value
+	InstanceTypeD3en6xlarge = "d3en.6xlarge"
+
+	// InstanceTypeD3en8xlarge is a InstanceType enum value
+	InstanceTypeD3en8xlarge = "d3en.8xlarge"
+
+	// InstanceTypeD3en12xlarge is a InstanceType enum value
+	InstanceTypeD3en12xlarge = "d3en.12xlarge"
+
 	// InstanceTypeF12xlarge is a InstanceType enum value
 	InstanceTypeF12xlarge = "f1.2xlarge"
 
@@ -119003,6 +119333,27 @@ const (
 
 	// InstanceTypeM5ad24xlarge is a InstanceType enum value
 	InstanceTypeM5ad24xlarge = "m5ad.24xlarge"
+
+	// InstanceTypeM5znLarge is a InstanceType enum value
+	InstanceTypeM5znLarge = "m5zn.large"
+
+	// InstanceTypeM5znXlarge is a InstanceType enum value
+	InstanceTypeM5znXlarge = "m5zn.xlarge"
+
+	// InstanceTypeM5zn2xlarge is a InstanceType enum value
+	InstanceTypeM5zn2xlarge = "m5zn.2xlarge"
+
+	// InstanceTypeM5zn3xlarge is a InstanceType enum value
+	InstanceTypeM5zn3xlarge = "m5zn.3xlarge"
+
+	// InstanceTypeM5zn6xlarge is a InstanceType enum value
+	InstanceTypeM5zn6xlarge = "m5zn.6xlarge"
+
+	// InstanceTypeM5zn12xlarge is a InstanceType enum value
+	InstanceTypeM5zn12xlarge = "m5zn.12xlarge"
+
+	// InstanceTypeM5znMetal is a InstanceType enum value
+	InstanceTypeM5znMetal = "m5zn.metal"
 
 	// InstanceTypeH12xlarge is a InstanceType enum value
 	InstanceTypeH12xlarge = "h1.2xlarge"
@@ -119231,6 +119582,9 @@ const (
 
 	// InstanceTypeM6gd16xlarge is a InstanceType enum value
 	InstanceTypeM6gd16xlarge = "m6gd.16xlarge"
+
+	// InstanceTypeMac1Metal is a InstanceType enum value
+	InstanceTypeMac1Metal = "mac1.metal"
 )
 
 // InstanceType_Values returns all elements of the InstanceType enum
@@ -119311,6 +119665,15 @@ func InstanceType_Values() []string {
 		InstanceTypeR5a12xlarge,
 		InstanceTypeR5a16xlarge,
 		InstanceTypeR5a24xlarge,
+		InstanceTypeR5bLarge,
+		InstanceTypeR5bXlarge,
+		InstanceTypeR5b2xlarge,
+		InstanceTypeR5b4xlarge,
+		InstanceTypeR5b8xlarge,
+		InstanceTypeR5b12xlarge,
+		InstanceTypeR5b16xlarge,
+		InstanceTypeR5b24xlarge,
+		InstanceTypeR5bMetal,
 		InstanceTypeR5dLarge,
 		InstanceTypeR5dXlarge,
 		InstanceTypeR5d2xlarge,
@@ -119473,6 +119836,16 @@ func InstanceType_Values() []string {
 		InstanceTypeD22xlarge,
 		InstanceTypeD24xlarge,
 		InstanceTypeD28xlarge,
+		InstanceTypeD3Xlarge,
+		InstanceTypeD32xlarge,
+		InstanceTypeD34xlarge,
+		InstanceTypeD38xlarge,
+		InstanceTypeD3enXlarge,
+		InstanceTypeD3en2xlarge,
+		InstanceTypeD3en4xlarge,
+		InstanceTypeD3en6xlarge,
+		InstanceTypeD3en8xlarge,
+		InstanceTypeD3en12xlarge,
 		InstanceTypeF12xlarge,
 		InstanceTypeF14xlarge,
 		InstanceTypeF116xlarge,
@@ -119510,6 +119883,13 @@ func InstanceType_Values() []string {
 		InstanceTypeM5ad12xlarge,
 		InstanceTypeM5ad16xlarge,
 		InstanceTypeM5ad24xlarge,
+		InstanceTypeM5znLarge,
+		InstanceTypeM5znXlarge,
+		InstanceTypeM5zn2xlarge,
+		InstanceTypeM5zn3xlarge,
+		InstanceTypeM5zn6xlarge,
+		InstanceTypeM5zn12xlarge,
+		InstanceTypeM5znMetal,
 		InstanceTypeH12xlarge,
 		InstanceTypeH14xlarge,
 		InstanceTypeH18xlarge,
@@ -119586,6 +119966,7 @@ func InstanceType_Values() []string {
 		InstanceTypeM6gd8xlarge,
 		InstanceTypeM6gd12xlarge,
 		InstanceTypeM6gd16xlarge,
+		InstanceTypeMac1Metal,
 	}
 }
 
@@ -120907,6 +121288,9 @@ const (
 
 	// ServiceTypeGateway is a ServiceType enum value
 	ServiceTypeGateway = "Gateway"
+
+	// ServiceTypeGatewayLoadBalancer is a ServiceType enum value
+	ServiceTypeGatewayLoadBalancer = "GatewayLoadBalancer"
 )
 
 // ServiceType_Values returns all elements of the ServiceType enum
@@ -120914,6 +121298,7 @@ func ServiceType_Values() []string {
 	return []string{
 		ServiceTypeInterface,
 		ServiceTypeGateway,
+		ServiceTypeGatewayLoadBalancer,
 	}
 }
 
@@ -121955,6 +122340,9 @@ const (
 
 	// VolumeTypeSt1 is a VolumeType enum value
 	VolumeTypeSt1 = "st1"
+
+	// VolumeTypeGp3 is a VolumeType enum value
+	VolumeTypeGp3 = "gp3"
 )
 
 // VolumeType_Values returns all elements of the VolumeType enum
@@ -121966,6 +122354,7 @@ func VolumeType_Values() []string {
 		VolumeTypeGp2,
 		VolumeTypeSc1,
 		VolumeTypeSt1,
+		VolumeTypeGp3,
 	}
 }
 
@@ -122023,6 +122412,9 @@ const (
 
 	// VpcEndpointTypeGateway is a VpcEndpointType enum value
 	VpcEndpointTypeGateway = "Gateway"
+
+	// VpcEndpointTypeGatewayLoadBalancer is a VpcEndpointType enum value
+	VpcEndpointTypeGatewayLoadBalancer = "GatewayLoadBalancer"
 )
 
 // VpcEndpointType_Values returns all elements of the VpcEndpointType enum
@@ -122030,6 +122422,7 @@ func VpcEndpointType_Values() []string {
 	return []string{
 		VpcEndpointTypeInterface,
 		VpcEndpointTypeGateway,
+		VpcEndpointTypeGatewayLoadBalancer,
 	}
 }
 
