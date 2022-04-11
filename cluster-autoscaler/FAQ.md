@@ -1110,7 +1110,7 @@ With kubernetes/autoscaler v1.21.0 the `update_vendor.sh` has been updated. We j
 Once the script runs successfully
 ```
 # Try following steps to confirm the correctness.
-go test $(go list ../cluster-autoscaler/... | grep -v cloudprovider | grep -v vendor)
+go test $(go list ./... | grep -v cloudprovider | grep -v vendor | grep -v integration)
 go test $(go list ../cluster-autoscaler/cloudprovider/mcm/... | grep -v vendor)
 
 go build main.go
