@@ -869,7 +869,8 @@ func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]stri
 
 // isMachineTerminating returns true if machine is already being terminated or considered for termination by autoscaler.
 // The machine marked `Failed` are also considered terminating now because eventually they will be terminated. This prevents race b/w MCM
-// and CA logic
+// and CA logic. However, the logs after this log might suggest that machineDeployment was reduced in size and unregistered nodes were removed
+// but that is because we don't return error if this race condition happens.
 func isMachineTerminating(machine *v1alpha1.Machine) bool {
 	if !machine.GetDeletionTimestamp().IsZero() || machine.Status.CurrentStatus.Phase == v1alpha1.MachineFailed {
 		klog.Infof("Machine %q is already being terminated, and hence skipping the deletion", machine.Name)
