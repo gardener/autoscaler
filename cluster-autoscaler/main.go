@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/server/mux"
 	"k8s.io/apiserver/pkg/server/routes"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	cloudBuilder "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/builder"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
@@ -178,7 +179,10 @@ var (
 	clusterAPICloudConfigAuthoritative = flag.Bool("clusterapi-cloud-config-authoritative", false, "Treat the cloud-config flag authoritatively (do not fallback to using kubeconfig flag). ClusterAPI only")
 	cordonNodeBeforeTerminate          = flag.Bool("cordon-node-before-terminating", false, "Should CA cordon nodes before terminating during downscale process")
 	daemonSetEvictionForEmptyNodes     = flag.Bool("daemonset-eviction-for-empty-nodes", false, "DaemonSet pods will be gracefully terminated from empty nodes")
+	daemonSetEvictionForOccupiedNodes  = flag.Bool("daemonset-eviction-for-occupied-nodes", true, "DaemonSet pods will be gracefully terminated from non-empty nodes")
 	userAgent                          = flag.String("user-agent", "cluster-autoscaler", "User agent used for HTTP calls.")
+
+	emitPerNodeGroupMetrics = flag.Bool("emit-per-nodegroup-metrics", false, "If true, emit per node group metrics.")
 )
 
 func createAutoscalingOptions() config.AutoscalingOptions {
@@ -254,6 +258,7 @@ func createAutoscalingOptions() config.AutoscalingOptions {
 		ClusterAPICloudConfigAuthoritative: *clusterAPICloudConfigAuthoritative,
 		CordonNodeBeforeTerminate:          *cordonNodeBeforeTerminate,
 		DaemonSetEvictionForEmptyNodes:     *daemonSetEvictionForEmptyNodes,
+		DaemonSetEvictionForOccupiedNodes:  *daemonSetEvictionForOccupiedNodes,
 		UserAgent:                          *userAgent,
 	}
 }
@@ -338,7 +343,7 @@ func buildAutoscaler() (core.Autoscaler, error) {
 }
 
 func run(healthCheck *metrics.HealthCheck) {
-	metrics.RegisterAll()
+	metrics.RegisterAll(*emitPerNodeGroupMetrics)
 
 	autoscaler, err := buildAutoscaler()
 	if err != nil {
@@ -385,7 +390,9 @@ func main() {
 	leaderElection.LeaderElect = true
 
 	options.BindLeaderElectionFlags(&leaderElection, pflag.CommandLine)
+	utilfeature.DefaultMutableFeatureGate.AddFlag(pflag.CommandLine)
 	kube_flag.InitFlags()
+
 	healthCheck := metrics.NewHealthCheck(*maxInactivityTimeFlag, *maxFailingTimeFlag)
 
 	klog.V(1).Infof("Cluster Autoscaler %s", version.ClusterAutoscalerVersion)

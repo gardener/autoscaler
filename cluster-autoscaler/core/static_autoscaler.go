@@ -258,6 +258,12 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) errors.AutoscalerError
 		return errors.ToAutoscalerError(errors.CloudProviderError, err)
 	}
 
+	// Update node groups min/max after cloud provider refresh
+	for _, nodeGroup := range a.AutoscalingContext.CloudProvider.NodeGroups() {
+		metrics.UpdateNodeGroupMin(nodeGroup.Id(), nodeGroup.MinSize())
+		metrics.UpdateNodeGroupMax(nodeGroup.Id(), nodeGroup.MaxSize())
+	}
+
 	nonExpendableScheduledPods := core_utils.FilterOutExpendablePods(originalScheduledPods, a.ExpendablePodsPriorityCutoff)
 	// Initialize cluster state to ClusterSnapshot
 	if typedErr := a.initializeClusterSnapshot(allNodes, nonExpendableScheduledPods); typedErr != nil {
@@ -794,7 +800,7 @@ func getUpcomingNodeInfos(registry *clusterstate.ClusterStateRegistry, nodeInfos
 			// Ensure new nodes have different names because nodeName
 			// will be used as a map key. Also deep copy pods (daemonsets &
 			// any pods added by cloud provider on template).
-			upcomingNodes = append(upcomingNodes, scheduler_utils.DeepCopyTemplateNode(nodeTemplate, i))
+			upcomingNodes = append(upcomingNodes, scheduler_utils.DeepCopyTemplateNode(nodeTemplate, fmt.Sprintf("upcoming-%d", i)))
 		}
 	}
 	return upcomingNodes
