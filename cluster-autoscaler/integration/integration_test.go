@@ -3,23 +3,15 @@ package integration
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
-
 	ginkgo "github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"os"
 )
 
 var (
 	controlKubeconfig = os.Getenv("CONTROL_KUBECONFIG")
 	targetKubeconfig  = os.Getenv("TARGET_KUBECONFIG")
-
-	pollingTimeout  = 300 * time.Second
-	pollingInterval = 2 * time.Second
-
-	scaleUpWorkload      = "scale-up-pod"
-	initialNumberOfNodes = 1
 )
 
 var driver = NewDriver(controlKubeconfig, targetKubeconfig)
