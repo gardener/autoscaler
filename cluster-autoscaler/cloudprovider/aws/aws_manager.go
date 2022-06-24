@@ -49,7 +49,7 @@ const (
 	operationWaitTimeout    = 5 * time.Second
 	operationPollInterval   = 100 * time.Millisecond
 	maxRecordsReturnedByAPI = 100
-	maxAsgNamesPerDescribe  = 50
+	maxAsgNamesPerDescribe  = 100
 	refreshInterval         = 1 * time.Minute
 	autoDiscovererTypeASG   = "asg"
 	asgAutoDiscovererKeyTag = "tag"
@@ -312,7 +312,7 @@ func (m *AwsManager) getAsgTemplate(asg *asg) (*asgTemplate, error) {
 	region := az[0 : len(az)-1]
 
 	if len(asg.AvailabilityZones) > 1 {
-		klog.Warningf("Found multiple availability zones for ASG %q; using %s\n", asg.Name, az)
+		klog.V(4).Infof("Found multiple availability zones for ASG %q; using %s for %s label\n", asg.Name, az, apiv1.LabelFailureDomainBetaZone)
 	}
 
 	instanceTypeName, err := m.buildInstanceType(asg)
