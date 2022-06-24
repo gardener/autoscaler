@@ -8,6 +8,14 @@
         - [During vendoring k8s](#during-vendoring-k8s)
         - [Others](#others)
 
+- [v1.22.1](#v1221)
+    - [Synced with which upstream CA](#synced-with-which-upstream-ca-1)
+    - [Changes made](#changes-made-1)
+        - [To FAQ](#to-faq-1)
+        - [During merging](#during-merging-1)
+        - [During vendoring k8s](#during-vendoring-k8s-1)
+        - [Others](#others-1)
+
 
 # v1.22.0
 
@@ -35,3 +43,26 @@
 ### Others
 - [Release matrix](../README.md#releases-gardenerautoscaler) of Gardener Autoscaler updated.
 - GO111MODULE=off in .ci/build and .ci/test.
+
+
+# v1.22.1
+
+
+## Synced with which upstream CA
+
+[v1.22.3](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.22.3/cluster-autoscaler)
+
+## Changes made
+
+### To FAQ
+
+- updated with new question and answers
+
+### During merging
+_None_
+
+### During vendoring k8s
+- didn't vendor in k8s 1.25 which is vendored in upstream CA 1.22.3
+
+### Others
+
