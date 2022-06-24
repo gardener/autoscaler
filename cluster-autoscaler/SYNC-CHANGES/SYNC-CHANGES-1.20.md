@@ -7,7 +7,13 @@
         - [During merging](#during-merging)
         - [During vendoring k8s](#during-vendoring-k8s)
         - [Others](#others)
-
+- [v1.20.1](#v1201)
+    - [Synced with which upstream CA](#synced-with-which-upstream-ca-1)
+    - [Changes made](#changes-made-1)
+        - [To FAQ](#to-faq-1)
+        - [During merging](#during-merging-1)
+        - [During vendoring k8s](#during-vendoring-k8s-1)
+        - [Others](#others-1)
 
 
 # v1.20.0
@@ -34,3 +40,21 @@ _None_
 ### Others
 - Updated README.md for cluster-autoscaler repo to contain new [release matrix](../README.md#releases-gardenerautoscaler) of Gardener Autoscaler
 
+# v1.20.1
+
+
+## Synced with which upstream CA
+
+[v1.20.3](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.20.3/cluster-autoscaler)
+
+## Changes made
+
+### To FAQ
+_None_
+### During merging
+- didn't update `cluster-autoscaler/cloudprovider/aws/ec2_instance_types.go` as its not used anymore by mcm, the one used
+now (in worst case) is `cluster-autoscaler/cloudprovider/mcm/ec2_instance_types.go`
+### During vendoring k8s
+_None_
+### Others
+_None_

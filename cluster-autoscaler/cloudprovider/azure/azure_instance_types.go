@@ -3244,12 +3244,6 @@ var InstanceTypes = map[string]*InstanceType{
 		MemoryMb:     458752,
 		GPU:          0,
 	},
-	"Standard_HB120rs_v3": {
-		InstanceType: "Standard_HB120rs_v3",
-		VCPU:         120,
-		MemoryMb:     458752,
-		GPU:          0,
-	},
 	"Standard_HB60rs": {
 		InstanceType: "Standard_HB60rs",
 		VCPU:         60,
