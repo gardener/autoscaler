@@ -22,12 +22,11 @@ autoscaler:
             registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/autoscaler/cluster-autoscaler'
             dockerfile: 'Dockerfile'
-            dir: 'cluster-autoscaler'
     steps:
       test:
-        image: 'golang:1.18.3'
+        image: 'golang:1.19.4'
       build:
-        image: 'golang:1.18.3'
+        image: 'golang:1.19.4'
         output_dir: 'binary'
   jobs:
     head-update:
