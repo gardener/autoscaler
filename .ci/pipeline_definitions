@@ -24,9 +24,9 @@ autoscaler:
             dockerfile: './cluster-autoscaler/Dockerfile'
     steps:
       test:
-        image: 'golang:1.19.4'
+        image: 'golang:1.19.5'
       build:
-        image: 'golang:1.19.4'
+        image: 'golang:1.19.5'
         output_dir: 'binary'
   jobs:
     head-update:
