@@ -11,6 +11,7 @@ autoscaler:
               - '.*/aws-sdk-go/.*'
               - '^vendor/.*'
               - '.*/vendor/.*'
+              - '.*/cloudprovider/(?!mcm)/.*'
     traits:
       version:
         preprocess:
