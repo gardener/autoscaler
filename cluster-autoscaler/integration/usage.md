@@ -3,11 +3,12 @@
 
 1. No user workload to be deployed other than system-components.
 2. All system-components to be able to run on one node
-3. 3 machinedeployments/node groups in the cluster should be present, with following min:max limits
+3. Ideal machine size -> 2 cores CPU, 8Gi memory
+4. 3 machinedeployments/node groups in the cluster should be present, with following min:max limits
     - machineDeployment1 (1:2)
     - machineDeployment2 (0:1)
     - machineDeployment3 (0:1)
-4. Make sure to **disable** calico-typha pods as they interfere with Integration test (especially ones related to scale-down due to under-utilization). Refer this [doc](https://github.com/gardener/gardener-extension-networking-calico/blob/master/docs/usage-as-end-user.md#example-networkingconfig-manifest) to disable it. 
+5. Make sure to **disable** calico-typha pods as they interfere with Integration test (especially ones related to scale-down due to under-utilization). Refer this [doc](https://github.com/gardener/gardener-extension-networking-calico/blob/master/docs/usage-as-end-user.md#example-networkingconfig-manifest) to disable it. 
 
 ## Cluster Autoscaler integration test suite
 
