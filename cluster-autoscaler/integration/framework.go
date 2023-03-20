@@ -307,7 +307,7 @@ func getDeploymentObjectWithVolumeReq(deploymentName string, claimName string) *
 	return deployment
 }
 
-func getDeploymentObject(replicas int32, resourceCpu resource.Quantity, resourceMemory resource.Quantity, workloadName string, tolerations []v1.Toleration) *appv1.Deployment {
+func getDeploymentObject(replicas int32, resourceCPU resource.Quantity, resourceMemory resource.Quantity, workloadName string, tolerations []v1.Toleration) *appv1.Deployment {
 	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workloadName,
@@ -338,7 +338,7 @@ func getDeploymentObject(replicas int32, resourceCpu resource.Quantity, resource
 							},
 							Resources: v1.ResourceRequirements{
 								Requests: v1.ResourceList{
-									v1.ResourceCPU:    resourceCpu,
+									v1.ResourceCPU:    resourceCPU,
 									v1.ResourceMemory: resourceMemory,
 								},
 							},
@@ -491,7 +491,7 @@ func (driver *Driver) addTaintsToNode(node *v1.Node, taintKeysToAdd map[string]b
 			return err
 		}
 
-		for taintKey, _ := range taintKeysToAdd {
+		for taintKey := range taintKeysToAdd {
 			freshNode.Spec.Taints = append(freshNode.Spec.Taints, v1.Taint{
 				Key:    taintKey,
 				Value:  "true",
