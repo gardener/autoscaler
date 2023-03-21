@@ -1131,7 +1131,7 @@ Assumption: We assume that the developer executing the below stages wants to syn
 1. In `cluster-autoscaler/go.mod`, upgrade versions of `machine-controller-manager-provider-aws`,  `machine-controller-manager-provider-azure` to the latest available release.
 1. Run update vendor script after changing to `cluster-autoscaler` directory:  `./hack/update-vendor.sh 1.x.0` 
    - If the above still gives test issues then use `rsync` or `diff -rq` to figure out differences in `vendor` directory between upstream and our fork and synchronize them manually.
-1. Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.0.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
+1. Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
 
 #### Stage D: Verification
 1. Run Core Autoscaler Unit tests: `cd cluster-autoscaler; go test $(go list ./... | grep -v cloudprovider | grep -v vendor | grep -v integration)` 
