@@ -4,26 +4,21 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"k8s.io/client-go/util/retry"
 	"os"
 	"regexp"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 var (
 	controlKubeconfig = os.Getenv("CONTROL_KUBECONFIG")
 	targetKubeconfig  = os.Getenv("TARGET_KUBECONFIG")
 
-	pollingTimeout  = 300 * time.Second
-	pollingInterval = 2 * time.Second
-
-	scaleUpWorkload      = "scale-up-pod"
-	initialNumberOfNodes = 1
-	maxNodes             = 4
+	scaleUpWorkload = "scale-up-pod"
+	maxNodes        = 4
 )
 
 var driver = NewDriver(controlKubeconfig, targetKubeconfig)
@@ -60,9 +55,10 @@ func checkIfClusterAutoscalerUp() {
 }
 
 func (driver *Driver) setupBeforeSuite() {
+	// TODO: add gomega assertions, available from MCM release v0.49.0. Example https://github.com/gardener/machine-controller-manager/blob/a03d0fbcd28ef2265adb57d095c5d0d3333d6043/pkg/test/integration/common/framework.go#L1230-L1233
 	driver.scaleAutoscaler(0)
 	driver.adjustNodeGroups()
-	driver.taintOrUnTaintInitialNodes(true)
+	driver.addTaintsToInitialNodes()
 	driver.runAutoscaler()
 }
 func (driver *Driver) deleteWorkload() error {
@@ -77,10 +73,11 @@ func (driver *Driver) deleteWorkload() error {
 func (driver *Driver) cleanup() {
 	By("Running CleanUp")
 
+	// TODO: add gomega assertions, available from MCM release v0.49.0. Example https://github.com/gardener/machine-controller-manager/blob/a03d0fbcd28ef2265adb57d095c5d0d3333d6043/pkg/test/integration/common/framework.go#L1230-L1233
 	driver.deleteWorkload()
 	driver.adjustNodeGroups()
 	driver.deleteWorkload()
-	driver.taintOrUnTaintInitialNodes(false)
+	driver.removeTaintsFromInitialNodes()
 
 	By("Scaling CA back up to 1 in the Shoot namespace")
 	err := driver.scaleAutoscaler(int32(initialNumberOfNodes))

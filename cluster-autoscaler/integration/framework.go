@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 
 	"k8s.io/client-go/util/retry"
 
@@ -28,6 +29,10 @@ const (
 	dwdAnnotation string = "dependency-watchdog.gardener.cloud/ignore-scaling"
 	//annotaion to skip the scaling down of exrta/unused node.
 	ignoreScaledownAnnotation string = "cluster-autoscaler.kubernetes.io/scale-down-disabled"
+
+	pollingTimeout       = 300 * time.Second
+	pollingInterval      = 2 * time.Second
+	initialNumberOfNodes = 1
 )
 
 var (
@@ -55,23 +60,24 @@ func rotateLogFile(fileName string) (*os.File, error) {
 	return os.Create(fileName)
 }
 
-func (driver *Driver) taintOrUnTaintInitialNodes(toTaint bool) error {
-	if toTaint {
-		gin.By("Marking nodes present before the tests as unschedulable")
-		nodes, _ := driver.targetCluster.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-		for _, n := range nodes.Items {
-			if err := driver.addTaintsToNode(&n, map[string]bool{blockInitialNodesForSchedulingTaint: true}); err != nil {
-				return err
-			}
+func (driver *Driver) addTaintsToInitialNodes() error {
+	gin.By("Marking nodes present before the tests as unschedulable")
+	nodes, _ := driver.targetCluster.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	for _, n := range nodes.Items {
+		if err := driver.addTaintsToNode(&n, map[string]bool{blockInitialNodesForSchedulingTaint: true}); err != nil {
+			return fmt.Errorf("some initial nodes might be tainted, tainting node %s failed with err: %q , aborting operation", n.Name, err)
 		}
-	} else {
-		gin.By("Turning nodes present before the tests, back to schedulable")
-		nodes, _ := driver.targetCluster.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
-		// marking every node schedulable as this method is called either in BeforeSuite() or AfterSuite()
-		for _, n := range nodes.Items {
-			if err := driver.removeTaintsFromNode(&n, false, map[string]bool{blockInitialNodesForSchedulingTaint: true}); err != nil {
-				return err
-			}
+	}
+	return nil
+}
+
+func (driver *Driver) removeTaintsFromInitialNodes() error {
+	gin.By("Turning nodes present before the tests, back to schedulable")
+	nodes, _ := driver.targetCluster.Clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	// marking every node schedulable as this method is called either in BeforeSuite() or AfterSuite()
+	for _, n := range nodes.Items {
+		if err := driver.removeTaintsFromNode(&n, false, map[string]bool{blockInitialNodesForSchedulingTaint: true}); err != nil {
+			return fmt.Errorf("some initial nodes might be left tainted, removing taint from node %s failed with err: %q , aborting operation", n.Name, err)
 		}
 	}
 	return nil
@@ -355,8 +361,8 @@ func getDeploymentObject(replicas int32, resourceCPU resource.Quantity, resource
 func (driver *Driver) deployWorkload(replicas int32, workloadName string, canTolerateTaintPlacedOnInitialNodes bool) error {
 	// TODO(himanshu-kun): Remove such a dependency on approximating system components space . This changes over time.
 	assumedSystemComponentsUsedSpace := *resource.NewMilliQuantity(1000, resource.DecimalSI)
-	cpuRequested := cpuResource.DeepCopy()
-	cpuRequested.Sub(assumedSystemComponentsUsedSpace)
+	approxCPURequested := cpuResource.DeepCopy()
+	approxCPURequested.Sub(assumedSystemComponentsUsedSpace)
 	tolerationsToInitialNodeTaint := []v1.Toleration{
 		{
 			Key:      blockInitialNodesForSchedulingTaint,
@@ -366,9 +372,9 @@ func (driver *Driver) deployWorkload(replicas int32, workloadName string, canTol
 	}
 	var deployment *appv1.Deployment
 	if canTolerateTaintPlacedOnInitialNodes {
-		deployment = getDeploymentObject(replicas, cpuRequested, mediumMemory, workloadName, tolerationsToInitialNodeTaint)
+		deployment = getDeploymentObject(replicas, approxCPURequested, mediumMemory, workloadName, tolerationsToInitialNodeTaint)
 	} else {
-		deployment = getDeploymentObject(replicas, cpuRequested, mediumMemory, workloadName, nil)
+		deployment = getDeploymentObject(replicas, approxCPURequested, mediumMemory, workloadName, nil)
 	}
 	_, err := driver.targetCluster.Clientset.AppsV1().Deployments("default").Create(context.Background(), deployment, metav1.CreateOptions{})
 	if err != nil {
