@@ -2,11 +2,11 @@
 name: Upstream Autoscaler Sync 
 about: Sync with Upstream Autoscaler
 labels: kind/enhancement
-title: Issue for - Sync with Upstream v1.2x
+title: Issue for - Sync with Upstream v1.x.y
 ---
 
 ## What would you like to be added
-Gardener autoscaler should be synced with respecrtive [Kubernetes Autoscaler 1.x.y Release](https://github.com/kubernetes/autoscaler/releases/)
+Gardener autoscaler should be synced with respective [Kubernetes Autoscaler 1.x.y Release](https://github.com/kubernetes/autoscaler/releases/)
 
 ## Why is this needed
 

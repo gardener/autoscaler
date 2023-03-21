@@ -1101,11 +1101,11 @@ Caveats:
 
 This is helpful in order to offer Gardener CA with latest or recent K8s version. Note that this may also demand a need to upgrade K8s version used by Machine Controller Manager.
 
-Assumption: We assume that the developer executing the below stages wants to synchronize with a certain minor release `1.x.y` of the cluster autoscaler
+Assumption: We assume that the developer executing the below stages wants to synchronise with a certain minor release `1.x.0` of the cluster autoscaler
 
 #### Stage A: Identify CA Release branch and Record Release commit id
 
-1. Go to: [K8S Autoscaler Releases](https://github.com/kubernetes/autoscaler/releases) and navigate to the release page of the specific `1.x.y` release. Example: [cluster-autoscaler-1.26.0 Release Page](https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.0).
+1. Go to: [K8S Autoscaler Releases](https://github.com/kubernetes/autoscaler/releases) and navigate to the release page of the specific `1.x.0` release. Example: [cluster-autoscaler-1.26.0 Release Page](https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.0).
 1. Record the commit id of the release mentioned in this release page. For example, commit id of 1.26.0 release is [3b2e3db9413755d4eddabdde44eab60987a17edd](https://github.com/kubernetes/autoscaler/commit/3b2e3db9413755d4eddabdde44eab60987a17edd). We will call this as `releaseCommitId`.
 2. Identify the release branch from [K8S Autoscaler Branches](https://github.com/kubernetes/autoscaler/branches). For example release branch for `1.26` is [cluster-autoscaler-release-1.26](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-release-1.26). We will cal lthis as `releaseBranch`
  
@@ -1124,19 +1124,18 @@ Assumption: We assume that the developer executing the below stages wants to syn
 
 #### Stage C:  Create Sync Branch, Perform Merge, Fix Vendor
 1. Create a sync branch: `git checkout -b sync-upstream-v1.x.0`. For example, if you are syncing against `1.26.0`, this would be: `git checkout -b sync-upstream-v1.26.0`
-1. Merge against the `releaseBranch` (which you had hard-reset to the `releaseCommitId` earlier): `git merge upstream-release-1.2x`
+1. Merge against the `releaseBranch` (which you had hard-reset to the `releaseCommitId` earlier): `git merge upstream-release-1.x.0`
    - This is where changes of master get merged in. advantage of merging is it won’t change the commit hashes of already existing commits.
    - Accept all vpa changes.
    - Accept our changes in `go.mod` and `go.sum` and `vendor` directory.  (The `hack/update-vendor.sh` script which will be executed in later step expected to fix things)
 1. In `cluster-autoscaler/go.mod`, upgrade versions of `machine-controller-manager-provider-aws`,  `machine-controller-manager-provider-azure` to the latest available release.
-1. Run update vendor script after changing to `cluster-autoscaler` directory:  `./hack/update-vendor.sh 1.x.y` 
+1. Run update vendor script after changing to `cluster-autoscaler` directory:  `./hack/update-vendor.sh 1.x.0` 
    - If the above still gives test issues then use `rsync` or `diff -rq` to figure out differences in `vendor` directory between upstream and our fork and synchronize them manually.
-1. Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.y.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
+1. Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.0.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
 
 #### Stage D: Verification
 1. Run Core Autoscaler Unit tests: `cd cluster-autoscaler; go test $(go list ./... | grep -v cloudprovider | grep -v vendor | grep -v integration)` 
 1. Run MCM cloud provider implementation tests: `go test $(go list ./cloudprovider/mcm/... | grep -v vendor)`
-1. Verify that binary can be created using: `../.ci/build`
 1. Verify that binary can be created using: `../.ci/build`
 1. Execute Integration Tests Locally:
    1. Follow instructions at: [IT Usage Guide](https://github.com/gardener/autoscaler/blob/machine-controller-manager-provider/cluster-autoscaler/integration/usage.md#usage-guide-for-running-cluster-autoscaler-integration-test-suite)
