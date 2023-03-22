@@ -25,9 +25,9 @@ import (
 )
 
 const (
-	//annotaion which makes dwd skip the scaling of component
+	// annotaion which makes dwd skip the scaling of component
 	dwdAnnotation string = "dependency-watchdog.gardener.cloud/ignore-scaling"
-	//annotaion to skip the scaling down of exrta/unused node.
+	// annotaion to skip the scaling down of exrta/unused node.
 	ignoreScaledownAnnotation string = "cluster-autoscaler.kubernetes.io/scale-down-disabled"
 
 	pollingTimeout       = 300 * time.Second
@@ -44,6 +44,13 @@ var (
 	largeMemory                         = *resource.NewQuantity(500*1024*1024, resource.BinarySI)
 	smallCPU                            = *resource.NewMilliQuantity(500, resource.DecimalSI)
 	cpuResource                         *resource.Quantity
+	tolerationsToInitialNodeTaint       = []v1.Toleration{
+		{
+			Key:      blockInitialNodesForSchedulingTaint,
+			Operator: v1.TolerationOpExists,
+			Effect:   v1.TaintEffectNoSchedule,
+		},
+	}
 )
 
 // rotateLogFile takes file name as input and returns a file object obtained by os.Create
@@ -363,13 +370,6 @@ func (driver *Driver) deployWorkload(replicas int32, workloadName string, canTol
 	assumedSystemComponentsUsedSpace := *resource.NewMilliQuantity(1000, resource.DecimalSI)
 	approxCPURequested := cpuResource.DeepCopy()
 	approxCPURequested.Sub(assumedSystemComponentsUsedSpace)
-	tolerationsToInitialNodeTaint := []v1.Toleration{
-		{
-			Key:      blockInitialNodesForSchedulingTaint,
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
 	var deployment *appv1.Deployment
 	if canTolerateTaintPlacedOnInitialNodes {
 		deployment = getDeploymentObject(replicas, approxCPURequested, mediumMemory, workloadName, tolerationsToInitialNodeTaint)
@@ -388,13 +388,6 @@ func (driver *Driver) deployLargeWorkload(replicas int32, workloadName string, c
 	extraCPURequest := *resource.NewMilliQuantity(1000, resource.DecimalSI)
 	cpuRequested := cpuResource.DeepCopy()
 	cpuRequested.Add(extraCPURequest)
-	tolerationsToInitialNodeTaint := []v1.Toleration{
-		{
-			Key:      blockInitialNodesForSchedulingTaint,
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
 	var deployment *appv1.Deployment
 	if canTolerateTaintPlacedOnInitialNodes {
 		deployment = getDeploymentObject(replicas, cpuRequested, largeMemory, "large-"+workloadName, tolerationsToInitialNodeTaint)
@@ -409,13 +402,6 @@ func (driver *Driver) deployLargeWorkload(replicas int32, workloadName string, c
 }
 
 func (driver *Driver) deploySmallWorkload(replicas int32, workloadName string, canTolerateTaintPlacedOnInitialNodes bool) error {
-	tolerationsToInitialNodeTaint := []v1.Toleration{
-		{
-			Key:      blockInitialNodesForSchedulingTaint,
-			Operator: v1.TolerationOpExists,
-			Effect:   v1.TaintEffectNoSchedule,
-		},
-	}
 	var deployment *appv1.Deployment
 	if canTolerateTaintPlacedOnInitialNodes {
 		deployment = getDeploymentObject(replicas, smallCPU, smallMemory, "small-"+workloadName, tolerationsToInitialNodeTaint)
@@ -454,7 +440,7 @@ func (driver *Driver) getOldestAndLatestNode() (*v1.Node, *v1.Node, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	//sorting in ascending order of creation timeStamp
+	// sorting in ascending order of creation timeStamp
 	sort.Slice(nodeList.Items, func(i, j int) bool {
 		return nodeList.Items[i].ObjectMeta.CreationTimestamp.Before(&nodeList.Items[j].ObjectMeta.CreationTimestamp)
 	})
