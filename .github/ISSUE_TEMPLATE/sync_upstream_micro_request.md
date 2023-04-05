@@ -1,16 +1,16 @@
 ---
-name: Upstream Autoscaler Sync 
-about: Sync with Upstream Autoscaler
+name: Sync with Upstream Autoscaler Minor Version
+about: Sync with Upstream Autoscaler Minor Version
 labels: kind/enhancement
-title: Issue for - Sync with Upstream v1.x.y
+title: Issue for - Sync with Upstream v1.x.0
 ---
 
 ## What would you like to be added
-Gardener autoscaler should be synced with respective [Kubernetes Autoscaler 1.x.y Release](https://github.com/kubernetes/autoscaler/releases/)
+Gardener autoscaler should be synced with respective [Kubernetes Autoscaler 1.x.0 Release](https://github.com/kubernetes/autoscaler/releases/)
 
 ## Why is this needed
 
-* To keep the fork in sync with upstream.
+* To keep the fork in sync with upstream minor version.
 * To ensure the shoot control planes are using respective version of CA for a given K8S version
 
 ## Steps

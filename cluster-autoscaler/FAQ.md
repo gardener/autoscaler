@@ -11,64 +11,81 @@ this document:
 
 # Table of Contents:
 <!--- TOC BEGIN -->
-* [Basics](#basics)
-  * [What is Cluster Autoscaler?](#what-is-cluster-autoscaler)
-  * [When does Cluster Autoscaler change the size of a cluster?](#when-does-cluster-autoscaler-change-the-size-of-a-cluster)
-  * [What types of pods can prevent CA from removing a node?](#what-types-of-pods-can-prevent-ca-from-removing-a-node)
-  * [Which version on Cluster Autoscaler should I use in my cluster?](#which-version-on-cluster-autoscaler-should-i-use-in-my-cluster)
-  * [Is Cluster Autoscaler an Alpha, Beta or GA product?](#is-cluster-autoscaler-an-alpha-beta-or-ga-product)
-  * [What are the Service Level Objectives for Cluster Autoscaler?](#what-are-the-service-level-objectives-for-cluster-autoscaler)
-  * [How does Horizontal Pod Autoscaler work with Cluster Autoscaler?](#how-does-horizontal-pod-autoscaler-work-with-cluster-autoscaler)
-  * [What are the key best practices for running Cluster Autoscaler?](#what-are-the-key-best-practices-for-running-cluster-autoscaler)
-  * [Should I use a CPU-usage-based node autoscaler with Kubernetes?](#should-i-use-a-cpu-usage-based-node-autoscaler-with-kubernetes)
-  * [How is Cluster Autoscaler different from CPU-usage-based node autoscalers?](#how-is-cluster-autoscaler-different-from-cpu-usage-based-node-autoscalers)
-  * [Is Cluster Autoscaler compatible with CPU-usage-based node autoscalers?](#is-cluster-autoscaler-compatible-with-cpu-usage-based-node-autoscalers)
-  * [How does Cluster Autoscaler work with Pod Priority and Preemption?](#how-does-cluster-autoscaler-work-with-pod-priority-and-preemption)
-  * [How does Cluster Autoscaler remove nodes?](#how-does-cluster-autoscaler-remove-nodes)
-* [How to?](#how-to)
-  * [I'm running cluster with nodes in multiple zones for HA purposes. Is that supported by Cluster Autoscaler?](#im-running-cluster-with-nodes-in-multiple-zones-for-ha-purposes-is-that-supported-by-cluster-autoscaler)
-  * [How can I monitor Cluster Autoscaler?](#how-can-i-monitor-cluster-autoscaler)
-  * [How can I increase the information that the CA is logging?](#how-can-i-increase-the-information-that-the-ca-is-logging)
-  * [How can I see all the events from Cluster Autoscaler?](#how-can-i-see-all-events-from-cluster-autoscaler)
-  * [How can I scale my cluster to just 1 node?](#how-can-i-scale-my-cluster-to-just-1-node)
-  * [How can I scale a node group to 0?](#how-can-i-scale-a-node-group-to-0)
-  * [How can I prevent Cluster Autoscaler from scaling down a particular node?](#how-can-i-prevent-cluster-autoscaler-from-scaling-down-a-particular-node)
-  * [How can I prevent Cluster Autoscaler from scaling down non-empty nodes?](#how-can-i-prevent-cluster-autoscaler-from-scaling-down-non-empty-nodes)
-  * [How can I modify Cluster Autoscaler reaction time?](#how-can-i-modify-cluster-autoscaler-reaction-time)
-  * [How can I configure overprovisioning with Cluster Autoscaler?](#how-can-i-configure-overprovisioning-with-cluster-autoscaler)
-  * [How can I enable/disable eviction for a specific DaemonSet](#how-can-i-enabledisable-eviction-for-a-specific-daemonset)
-  * [How can I enable Cluster Autoscaler to scale up when Node's max volume count is exceeded (CSI migration enabled)?](#how-can-i-enable-cluster-autoscaler-to-scale-up-when-nodes-max-volume-count-is-exceeded-csi-migration-enabled)
-* [Internals](#internals)
-  * [Are all of the mentioned heuristics and timings final?](#are-all-of-the-mentioned-heuristics-and-timings-final)
-  * [How does scale-up work?](#how-does-scale-up-work)
-  * [How does scale-down work?](#how-does-scale-down-work)
-  * [Does CA work with PodDisruptionBudget in scale-down?](#does-ca-work-with-poddisruptionbudget-in-scale-down)
-  * [Does CA respect GracefulTermination in scale-down?](#does-ca-respect-gracefultermination-in-scale-down)
-  * [How does CA deal with unready nodes?](#how-does-ca-deal-with-unready-nodes)
-  * [How fast is Cluster Autoscaler?](#how-fast-is-cluster-autoscaler)
-  * [How fast is HPA when combined with CA?](#how-fast-is-hpa-when-combined-with-ca)
-  * [Where can I find the designs of the upcoming features?](#where-can-i-find-the-designs-of-the-upcoming-features)
-  * [What are Expanders?](#what-are-expanders)
-  * [Does CA respect node affinity when selecting node groups to scale up?](#does-ca-respect-node-affinity-when-selecting-node-groups-to-scale-up)
-  * [What are the parameters to CA?](#what-are-the-parameters-to-ca)
-* [Troubleshooting](#troubleshooting)
-  * [I have a couple of nodes with low utilization, but they are not scaled down. Why?](#i-have-a-couple-of-nodes-with-low-utilization-but-they-are-not-scaled-down-why)
-  * [How to set PDBs to enable CA to move kube-system pods?](#how-to-set-pdbs-to-enable-ca-to-move-kube-system-pods)
-  * [I have a couple of pending pods, but there was no scale-up?](#i-have-a-couple-of-pending-pods-but-there-was-no-scale-up)
-  * [CA doesn’t work, but it used to work yesterday. Why?](#ca-doesnt-work-but-it-used-to-work-yesterday-why)
-  * [How can I check what is going on in CA ?](#how-can-i-check-what-is-going-on-in-ca-)
-  * [What events are emitted by CA?](#what-events-are-emitted-by-ca)
-  * [My cluster is below minimum / above maximum number of nodes, but CA did not fix that! Why?](#my-cluster-is-below-minimum--above-maximum-number-of-nodes-but-ca-did-not-fix-that-why)
-  * [What happens in scale-up when I have no more quota in the cloud provider?](#what-happens-in-scale-up-when-i-have-no-more-quota-in-the-cloud-provider)
-* [Developer](#developer)
-  * [What go version should be used to compile CA?](#what-go-version-should-be-used-to-compile-ca)
-  * [How can I run e2e tests?](#how-can-i-run-e2e-tests)
-  * [How should I test my code before submitting PR?](#how-should-i-test-my-code-before-submitting-pr)
-  * [How can I update CA dependencies (particularly k8s.io/kubernetes)?](#how-can-i-update-ca-dependencies-particularly-k8siokubernetes)
-
-* [In the context of Gardener](#in-the-context-of-gardener)
-  * [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
-  * [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
+- [Frequently Asked Questions](#frequently-asked-questions)
+- [Older versions](#older-versions)
+- [Table of Contents:](#table-of-contents)
+- [Basics](#basics)
+    - [What is Cluster Autoscaler?](#what-is-cluster-autoscaler)
+    - [When does Cluster Autoscaler change the size of a cluster?](#when-does-cluster-autoscaler-change-the-size-of-a-cluster)
+    - [What types of pods can prevent CA from removing a node?](#what-types-of-pods-can-prevent-ca-from-removing-a-node)
+    - [Which version on Cluster Autoscaler should I use in my cluster?](#which-version-on-cluster-autoscaler-should-i-use-in-my-cluster)
+    - [Is Cluster Autoscaler an Alpha, Beta or GA product?](#is-cluster-autoscaler-an-alpha-beta-or-ga-product)
+    - [What are the Service Level Objectives for Cluster Autoscaler?](#what-are-the-service-level-objectives-for-cluster-autoscaler)
+    - [How does Horizontal Pod Autoscaler work with Cluster Autoscaler?](#how-does-horizontal-pod-autoscaler-work-with-cluster-autoscaler)
+    - [What are the key best practices for running Cluster Autoscaler?](#what-are-the-key-best-practices-for-running-cluster-autoscaler)
+    - [Should I use a CPU-usage-based node autoscaler with Kubernetes?](#should-i-use-a-cpu-usage-based-node-autoscaler-with-kubernetes)
+    - [How is Cluster Autoscaler different from CPU-usage-based node autoscalers?](#how-is-cluster-autoscaler-different-from-cpu-usage-based-node-autoscalers)
+    - [Is Cluster Autoscaler compatible with CPU-usage-based node autoscalers?](#is-cluster-autoscaler-compatible-with-cpu-usage-based-node-autoscalers)
+    - [How does Cluster Autoscaler work with Pod Priority and Preemption?](#how-does-cluster-autoscaler-work-with-pod-priority-and-preemption)
+    - [How does Cluster Autoscaler remove nodes?](#how-does-cluster-autoscaler-remove-nodes)
+- [How to?](#how-to)
+    - [I'm running cluster with nodes in multiple zones for HA purposes. Is that supported by Cluster Autoscaler?](#im-running-cluster-with-nodes-in-multiple-zones-for-ha-purposes-is-that-supported-by-cluster-autoscaler)
+    - [How can I monitor Cluster Autoscaler?](#how-can-i-monitor-cluster-autoscaler)
+    - [How can I see all events from Cluster Autoscaler?](#how-can-i-see-all-events-from-cluster-autoscaler)
+    - [How can I scale my cluster to just 1 node?](#how-can-i-scale-my-cluster-to-just-1-node)
+    - [How can I scale a node group to 0?](#how-can-i-scale-a-node-group-to-0)
+    - [How can I prevent Cluster Autoscaler from scaling down a particular node?](#how-can-i-prevent-cluster-autoscaler-from-scaling-down-a-particular-node)
+    - [How can I prevent Cluster Autoscaler from scaling down non-empty nodes?](#how-can-i-prevent-cluster-autoscaler-from-scaling-down-non-empty-nodes)
+    - [How can I modify Cluster Autoscaler reaction time?](#how-can-i-modify-cluster-autoscaler-reaction-time)
+    - [How can I configure overprovisioning with Cluster Autoscaler?](#how-can-i-configure-overprovisioning-with-cluster-autoscaler)
+    - [How can I enable/disable eviction for a specific DaemonSet](#how-can-i-enabledisable-eviction-for-a-specific-daemonset)
+    - [How can I enable Cluster Autoscaler to scale up when Node's max volume count is exceeded (CSI migration enabled)?](#how-can-i-enable-cluster-autoscaler-to-scale-up-when-nodes-max-volume-count-is-exceeded-csi-migration-enabled)
+- [Internals](#internals)
+    - [Are all of the mentioned heuristics and timings final?](#are-all-of-the-mentioned-heuristics-and-timings-final)
+    - [How does scale-up work?](#how-does-scale-up-work)
+    - [How does scale-down work?](#how-does-scale-down-work)
+    - [Does CA work with PodDisruptionBudget in scale-down?](#does-ca-work-with-poddisruptionbudget-in-scale-down)
+    - [Does CA respect GracefulTermination in scale-down?](#does-ca-respect-gracefultermination-in-scale-down)
+    - [How does CA deal with unready nodes?](#how-does-ca-deal-with-unready-nodes)
+    - [How fast is Cluster Autoscaler?](#how-fast-is-cluster-autoscaler)
+    - [How fast is HPA when combined with CA?](#how-fast-is-hpa-when-combined-with-ca)
+    - [Where can I find the designs of the upcoming features?](#where-can-i-find-the-designs-of-the-upcoming-features)
+    - [What are Expanders?](#what-are-expanders)
+    - [Does CA respect node affinity when selecting node groups to scale up?](#does-ca-respect-node-affinity-when-selecting-node-groups-to-scale-up)
+    - [What are the parameters to CA?](#what-are-the-parameters-to-ca)
+- [Troubleshooting:](#troubleshooting)
+    - [I have a couple of nodes with low utilization, but they are not scaled down. Why?](#i-have-a-couple-of-nodes-with-low-utilization-but-they-are-not-scaled-down-why)
+    - [How to set PDBs to enable CA to move kube-system pods?](#how-to-set-pdbs-to-enable-ca-to-move-kube-system-pods)
+    - [I have a couple of pending pods, but there was no scale-up?](#i-have-a-couple-of-pending-pods-but-there-was-no-scale-up)
+    - [CA doesn’t work, but it used to work yesterday. Why?](#ca-doesnt-work-but-it-used-to-work-yesterday-why)
+    - [How can I check what is going on in CA ?](#how-can-i-check-what-is-going-on-in-ca-)
+    - [How can I increase the information that the CA is logging?](#how-can-i-increase-the-information-that-the-ca-is-logging)
+    - [What events are emitted by CA?](#what-events-are-emitted-by-ca)
+    - [My cluster is below minimum / above maximum number of nodes, but CA did not fix that! Why?](#my-cluster-is-below-minimum--above-maximum-number-of-nodes-but-ca-did-not-fix-that-why)
+    - [What happens in scale-up when I have no more quota in the cloud provider?](#what-happens-in-scale-up-when-i-have-no-more-quota-in-the-cloud-provider)
+- [Developer:](#developer)
+    - [What go version should be used to compile CA?](#what-go-version-should-be-used-to-compile-ca)
+    - [How can I run e2e tests?](#how-can-i-run-e2e-tests)
+    - [How should I test my code before submitting PR?](#how-should-i-test-my-code-before-submitting-pr)
+    - [How can I update CA dependencies (particularly k8s.io/kubernetes)?](#how-can-i-update-ca-dependencies-particularly-k8siokubernetes)
+- [In the context of Gardener:](#in-the-context-of-gardener)
+    - [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
+      - [Stage A: Identify CA Release branch and Record Release commit id](#stage-a-identify-ca-release-branch-and-record-release-commit-id)
+      - [Stage B: Setup Local Repo Before Merge](#stage-b-setup-local-repo-before-merge)
+      - [Stage C: Perform Merge, Fix Vendor](#stage-c-perform-merge-fix-vendor)
+      - [Stage D: Verification](#stage-d-verification)
+      - [Stage E: Finalization](#stage-e-finalization)
+    - [How do I sync gardener autoscaler with an upstream autoscaler micro release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-micro-release)
+      - [Stage A: Identify CA Release branch and Record Release commit id](#stage-a-identify-ca-release-branch-and-record-release-commit-id-1)
+      - [Stage B: Setup Local Repo Before Merge](#stage-b-setup-local-repo-before-merge-1)
+      - [Stage C: Perform Merge, Fix Vendor](#stage-c-perform-merge-fix-vendor-1)
+      - [Stage D: Verification](#stage-d-verification-1)
+      - [Stage E: Finalization](#stage-e-finalization-1)
+    - [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
+      - [Step 1 (Optional)](#step-1-optional)
+      - [Step 2:](#step-2)
+      - [Step 3:](#step-3)
+      - [Step 5:](#step-5)
 <!--- TOC END -->
 
 # Basics
@@ -1121,9 +1138,9 @@ Assumption: We assume that the developer executing the below stages wants to syn
 1. Check out and pull the primary branch for gardener fork which is not `master`/`main` but is instead named `machine-controller-manager-provider`:  
    1. `git checkout machine-controller-manager-provider`
    1. `git pull origin machine-controller-manager-provider`
-
-#### Stage C:  Create Sync Branch, Perform Merge, Fix Vendor
 1. Create a sync branch: `git checkout -b sync-upstream-v1.x.0`. For example, if you are syncing against `1.26.0`, this would be: `git checkout -b sync-upstream-v1.26.0`
+
+#### Stage C: Perform Merge, Fix Vendor
 1. Merge against the `releaseBranch` (which you had hard-reset to the `releaseCommitId` earlier): `git merge upstream-release-1.x.0`
    - This is where changes of master get merged in. advantage of merging is it won’t change the commit hashes of already existing commits.
    - Accept all vpa changes.
@@ -1149,6 +1166,54 @@ Assumption: We assume that the developer executing the below stages wants to syn
 1. Make a commit and push to your forked repo: `git push user sync-upstream-v1.x.0`
 1. Create a PR on `machine-controller-manager-provider` branch of `gardener/autoscaler`
 
+
+### How do I sync gardener autoscaler with an upstream autoscaler micro release?
+
+This is helpful in order to offer Gardener CA with latest patch version of upstream. 
+
+Assumption: We assume that the developer executing the below stages wants to synchronise with a certain minor release `1.x.y` of the cluster autoscaler
+
+#### Stage A: Identify CA Release branch and Record Release commit id
+1.  Go to: [K8S Autoscaler Releases](https://github.com/kubernetes/autoscaler/releases) and navigate to the release page of the specific `1.x.y` patch release. Example: [cluster-autoscaler-1.26.1 Release Page](https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.1).
+2.  Record the commit id of the release mentioned in this release page. For example, commit id of 1.26.1 release is [f48095c20ad1b305a1392a3a031b0a7e31e1927a](https://github.com/kubernetes/autoscaler/commit/f48095c20ad1b305a1392a3a031b0a7e31e1927a). We will call this as `patchReleaseCommitId`.
+3. Identify the release branch from [K8S Autoscaler Branches](https://github.com/kubernetes/autoscaler/branches). For example patch branch for `1.26` is [cluster-autoscaler-release-1.26](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-release-1.26). We will cal lthis as `releaseBranch`
+
+#### Stage B: Setup Local Repo Before Merge
+1.  Fork `github.com/gardener/autoscaler` into your github account named `user` such that you now have a forked repo `https://github.com/user/autoscaler` . If you alread have the fork then Sync the fork.
+2.  Check out `github.com/gardener/autoscaler` under `$GOPATH/src/k8s.io`
+3.  Change to checked-out `autoscaler` dir and set `upstream` and `user` (fork) targets
+    1.  `git remote add user https://github.com/user/autoscaler`
+    2.  `git remote add upstream https://github.com/kubernetes/autoscaler.git`
+4. Execute: `git fetch –all`
+5. Switch to the release branch:
+6.  Switch to the `releaseBranch`: `git switch cluster-autoscaler-release-1.x.0`. Ex: `git switch cluster-autoscaler-release-1.26`
+7. Hard Reset to the `patchReleaseCommitId`: `git reset --hard patchReleaseCommitId`. Example: `git reset --hard f48095c20ad1b305a1392a3a031b0a7e31e1927a`.
+8. Switch to and pull the `rel` branch for the gardener fork. (This branch should have been earlier created by the gardener robot). For example, for autoscaler release `1.26`, the patch branch should be: [rel-v1.26](https://github.com/gardener/autoscaler/tree/rel-v1.26).
+	1. Example: `git switch rel-v1.26`
+	2. Example: `git pull origin rel-v1.26
+9. Create a sync branch off the patch rel branch: `git switch -c sync-rel-v1.x`. Example: `git switch -c sync-rel-v1.26`
+
+#### Stage C: Perform Merge, Fix Vendor
+1. Merge against the release branch that you had hard-reset to the `patchReleaseCommitId` earlier.
+	1. `git merge cluster-autoscaler-release-1.x`. Example: `git merge cluster-autoscaler-release-1.26`
+2. In `cluster-autoscaler/go.mod`, upgrade versions of `machine-controller-manager-provider-aws`, `machine-controller-manager-provider-azure` to the latest available release.
+3. Run update vendor script after changing to `cluster-autoscaler` directory: `./hack/update-vendor.sh 1.x.y`.
+	1. Example: `./hack/update-vendor.sh 1.26.1`
+4.  Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.y.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
+
+#### Stage D: Verification
+1.  Run Core Autoscaler Unit tests: `cd cluster-autoscaler; go test $(go list ./... | grep -v cloudprovider | grep -v vendor | grep -v integration)`
+2.  Run MCM cloud provider implementation tests: `go test $(go list ./cloudprovider/mcm/... | grep -v vendor)`
+3.  Verify that binary can be created using: `../.ci/build`
+4.  Execute Integration Tests Locally:
+    1.  Follow instructions at: [IT Usage Guide](https://github.com/gardener/autoscaler/blob/machine-controller-manager-provider/cluster-autoscaler/integration/usage.md#usage-guide-for-running-cluster-autoscaler-integration-test-suite)
+    2.  Before running `make download-kubeconfigs`, create a folder `mkdir -p dev/kubeconfigs`
+    3.  This target will print out a list of shell variable `EXPORT` statements. Copy-paste the printed shell commands and execute them
+    4.  Now run `make test-integration`
+
+#### Stage E: Finalization
+1.  Make a commit and push to your forked repo: git push user sync-rel-v1.x. Example: `git push user sync-rel-v1.26`
+4.  Create a PR on on the rel-v1.x   branch of `gardener/autoscaler`
 
 ### How do I revendor a different version of MCM in autoscaler?
 
