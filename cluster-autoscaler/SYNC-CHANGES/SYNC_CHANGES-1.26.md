@@ -39,12 +39,14 @@
 
 ## Synced with which upstream CA
 
-[v1.26.1](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.26.1/cluster-autoscaler)
+[v1.26.2](https://github.com/kubernetes/autoscaler/tree/cluster-autoscaler-1.26.2/cluster-autoscaler)
 
 ## Changes made
+ - See general release notes of 1.26.2: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.2
  - See general release notes of 1.26.1: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.1
 
 ### During merging
+  - `k8s.io/*` package versions upgraded to newer ones specific in upstream release branch.
 
 ### During vendoring k8s
 - mcm v0.48.1 -> 0.48.2
