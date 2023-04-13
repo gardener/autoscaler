@@ -46,7 +46,15 @@
  - See general release notes of 1.26.1: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.26.1
 
 ### During merging
-  - `k8s.io/*` package versions upgraded to newer ones specific in upstream release branch.
+ - k8s.io/api v0.26.0 -> v0.26.3
+ - k8s.io/apimachinery v0.26.0 -> v0.26.3
+ - k8s.io/apiserver v0.26.0 -> v0.26.3
+ - k8s.io/client-go v0.26.0 -> v0.26.3
+ - k8s.io/cloud-provider v0.26.0 -> v0.26.3
+ - k8s.io/component-base v0.26.0 -> v0.26.3
+ - k8s.io/component-helpers v0.26.0 -> v0.26.3
+ - k8s.io/kubelet v0.26.0 -> v0.26.3
+ - k8s.io/kubernetes v1.26.0 -> v1.26.3
 
 ### During vendoring k8s
 - mcm v0.48.1 -> 0.48.2
