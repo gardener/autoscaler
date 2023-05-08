@@ -561,7 +561,7 @@ func (m *McmManager) DeleteMachines(machines []*Ref) error {
 			continue
 		} else if err != nil {
 			// Timeout occurred
-			klog.Errorf("Unable to update MachineDeployment object %s, Error: %s", commonMachineDeployment.Name, err)
+			klog.Errorf("Unable to update MachineDeployment object %s, Error: %s , timeout occurred", commonMachineDeployment.Name, err)
 			return err
 		}
 
@@ -796,23 +796,21 @@ func isRollingUpdateFinished(md *v1alpha1.MachineDeployment) bool {
 	return true
 }
 
+// getMachineDeploymentUntilDeadline returns error only when fetching the machineDeployment has been failing consequently and deadline is crossed
 func (m *McmManager) getMachineDeploymentUntilDeadline(mdName string, retryInterval time.Duration, deadline time.Time) (*v1alpha1.MachineDeployment, error) {
-	var md *v1alpha1.MachineDeployment
-	ctx, cancelFn := context.WithDeadline(context.Background(), deadline)
-	defer cancelFn()
-
-	err := wait.PollImmediateUntilWithContext(ctx, retryInterval, func(_ context.Context) (bool, error) {
-		var err error
-		md, err = m.machineDeploymentLister.MachineDeployments(m.namespace).Get(mdName)
-		if err != nil {
+	for {
+		md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(mdName)
+		if err != nil && time.Now().Before(deadline) {
 			klog.Warningf("Unable to fetch MachineDeployment object %s, Error: %s, will retry in %s", mdName, err, retryInterval)
-			return false, nil
+			time.Sleep(conflictRetryInterval)
+			continue
+		} else if err != nil {
+			// Timeout occurred
+			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %s, timeout occurred", mdName, err)
+			return nil, err
 		}
-
-		return true, nil
-	})
-
-	return md, err
+		return md, nil
+	}
 }
 
 func filterOutNodes(nodes []*v1.Node, instanceType string) []*v1.Node {
