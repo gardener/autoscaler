@@ -64,7 +64,7 @@ import (
 )
 
 const (
-	maxRetryTimeout        = 5 * time.Second
+	maxRetryTimeout        = 1 * time.Minute
 	conflictRetryInterval  = 5 * time.Second
 	minResyncPeriodDefault = 1 * time.Hour
 	// machinePriorityAnnotation is the annotation to set machine priority while deletion
@@ -811,9 +811,6 @@ func (m *McmManager) getMachineDeploymentUntilDeadline(mdName string, retryInter
 
 		return true, nil
 	})
-
-	// overwriting empty error
-	err = fmt.Errorf("maxRetryTimeout of %s exceeded", maxRetryTimeout)
 
 	return md, err
 }
