@@ -519,7 +519,7 @@ func (m *McmManager) DeleteMachines(machines []*Ref) error {
 			}
 		}
 	}
-	
+
 	for _, machine := range machines {
 
 		// Trying to update the priority of machine till retryDeadline
