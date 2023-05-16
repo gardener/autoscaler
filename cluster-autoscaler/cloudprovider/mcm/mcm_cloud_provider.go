@@ -23,8 +23,6 @@ package mcm
 
 import (
 	"fmt"
-	"strings"
-
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
@@ -44,7 +42,8 @@ const (
 
 	// GPULabel is the label added to nodes with GPU resource.
 	// TODO: Align on a GPU Label for Gardener.
-	GPULabel = "gardener.cloud/accelerator"
+	GPULabel                   = "gardener.cloud/accelerator"
+	machineDeploymentNameLabel = "name"
 )
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
@@ -377,7 +376,7 @@ func (machinedeployment *MachineDeployment) DeleteNodes(nodes []*apiv1.Node) err
 		}
 		ref, err := ReferenceFromProviderID(machinedeployment.mcmManager, node.Spec.ProviderID)
 		if err != nil {
-			return fmt.Errorf("Couldn't find the machine-name from provider-id %s", node.Spec.ProviderID)
+			return fmt.Errorf("couldn't find the machine-name from provider-id %s", node.Spec.ProviderID)
 		}
 		machines = append(machines, ref)
 	}

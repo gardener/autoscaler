@@ -26,6 +26,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"k8s.io/autoscaler/cluster-autoscaler/utils/deletetaint"
+	"k8s.io/cri-api/pkg/errors"
 	"math/rand"
 	"net/http"
 	"os"
@@ -479,6 +481,45 @@ func (m *McmManager) DeleteMachines(machines []*Ref) error {
 		return fmt.Errorf("MachineDeployment %s is under rolling update , cannot reduce replica count", commonMachineDeployment.Name)
 	}
 
+	// update priority of all machines except the ones that have the ToBeDeleted taint to 3
+	allMachinesForMachineDeployment, err := m.getMachinesForMachineDeploymentUntilDeadline(md.Name, conflictRetryInterval, time.Now().Add(maxRetryTimeout))
+	if err != nil {
+		return fmt.Errorf("unable to list all machines for node group %s, cannot proceed with scale-in of machines, Error: %v", md.Name, err)
+	}
+	for _, machine := range allMachinesForMachineDeployment.Items {
+		nodeName := machine.Labels[v1alpha1.NodeLabelKey]
+		node, err := m.getNodeForMachineUntilDeadline(nodeName, conflictRetryInterval, time.Now().Add(maxRetryTimeout))
+		if err != nil {
+			return fmt.Errorf("unable to get Node object %s for machine %s, cannot proceed with scale-in of machines, Error: %v", nodeName, machine.Name, err)
+		}
+		toBeDeletedTaintPresent := false
+		for _, taint := range node.Spec.Taints {
+			if taint.Key == deletetaint.ToBeDeletedTaint {
+				toBeDeletedTaintPresent = true
+				break
+			}
+		}
+		if toBeDeletedTaintPresent {
+			// Don't update priority annotation if the taint is present
+			continue
+		}
+		clone := machine.DeepCopy()
+		val, ok := clone.Annotations[machinePriorityAnnotation]
+		if !ok || val != "3" {
+			clone.Annotations[machinePriorityAnnotation] = "3"
+			retryDeadline := time.Now().Add(maxRetryTimeout)
+			for {
+				_, err := m.machineClient.Machines(m.namespace).Update(context.TODO(), clone, metav1.UpdateOptions{})
+				if err != nil && time.Now().Before(retryDeadline) {
+					klog.Warningf("could not update priority annotation on existing machine %s; will retry this operation, error: %v", clone.Name, err)
+					time.Sleep(conflictRetryInterval)
+				} else if err != nil {
+					return fmt.Errorf("could not update priority annotation on existing machine %s, error: %v", clone.Name, err)
+				}
+			}
+		}
+	}
+	
 	for _, machine := range machines {
 
 		// Trying to update the priority of machine till retryDeadline
@@ -802,7 +843,7 @@ func (m *McmManager) getMachineDeploymentUntilDeadline(mdName string, retryInter
 		md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(mdName)
 		if err != nil && time.Now().Before(deadline) {
 			klog.Warningf("Unable to fetch MachineDeployment object %s, Error: %s, will retry in %s", mdName, err, retryInterval)
-			time.Sleep(conflictRetryInterval)
+			time.Sleep(retryInterval)
 			continue
 		} else if err != nil {
 			// Timeout occurred
@@ -810,6 +851,43 @@ func (m *McmManager) getMachineDeploymentUntilDeadline(mdName string, retryInter
 			return nil, err
 		}
 		return md, nil
+	}
+}
+
+// getMachinesForMachineDeploymentUntilDeadline returns error only when fetching the machine list has been failing consequently and deadline is crossed
+func (m *McmManager) getMachinesForMachineDeploymentUntilDeadline(mdName string, retryInterval time.Duration, deadline time.Time) (*v1alpha1.MachineList, error) {
+	for {
+		ml, err := m.machineClient.Machines(m.namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labels.FormatLabels(map[string]string{machineDeploymentNameLabel: mdName})})
+		if err != nil && time.Now().Before(deadline) {
+			klog.Warningf("Unable to fetch machines for machine deployment %s, Error: %s, will retry in %s", mdName, err, retryInterval)
+			time.Sleep(retryInterval)
+			continue
+		} else if err != nil {
+			// Timeout occurred
+			klog.Errorf("Unable to fetch machines for machine deployment %s, Error: %s, timeout occurred", mdName, err)
+			return nil, err
+		}
+		return ml, nil
+	}
+}
+
+// getNodeForMachineUntilDeadline returns error only when fetching the node has been failing consequently and deadline is crossed
+func (m *McmManager) getNodeForMachineUntilDeadline(name string, retryInterval time.Duration, deadline time.Time) (*v1.Node, error) {
+	for {
+		node, err := m.nodeLister.Get(name)
+		if errors.IsNotFound(err) {
+			return nil, err
+		}
+		if err != nil && time.Now().Before(deadline) {
+			klog.Warningf("Unable to fetch Node object %s, Error: %s, will retry in %s", name, err, retryInterval)
+			time.Sleep(retryInterval)
+			continue
+		} else if err != nil {
+			// Timeout occurred
+			klog.Errorf("Unable to fetch Node object %s, Error: %s, timeout occurred", name, err)
+			return nil, err
+		}
+		return node, nil
 	}
 }
 
