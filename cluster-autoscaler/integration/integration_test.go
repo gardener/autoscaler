@@ -338,14 +338,14 @@ func (driver *Driver) controllerTests() {
 			It("should scale-down correct node and reset priorities of the rest to 3", func() {
 				By("Deploying a workload A")
 				Expect(driver.deployWorkload(int32(1), scaleUpWorkload+"-a", workerWithOneZone, false)).To(BeNil())
-				By("Validating Scale up, node A' should join soon")
+				By("Validating Scale up, node A should join soon")
 				Eventually(
 					driver.targetCluster.getNumberOfReadyNodes,
 					pollingTimeout,
 					pollingInterval).
 					Should(BeNumerically("==", initialNumberOfNodes+1))
 
-				By("Setting priority annotation with value 1 on the machine obj for node A'")
+				By("Setting priority annotation with value 1 on the machine obj for node A")
 				mcdList, err := driver.controlCluster.MCMClient.MachineV1alpha1().MachineDeployments(controlClusterNamespace).List(context.TODO(), metav1.ListOptions{})
 				Expect(err).To(BeNil())
 
@@ -368,7 +368,7 @@ func (driver *Driver) controllerTests() {
 
 				By("Deploying another workload B")
 				Expect(driver.deployWorkload(int32(1), scaleUpWorkload+"-b", workerWithOneZone, false)).To(BeNil())
-				By("Validating Scale up, node B' should join soon")
+				By("Validating Scale up, node B should join soon")
 				Eventually(
 					driver.targetCluster.getNumberOfReadyNodes,
 					pollingTimeout,
@@ -385,7 +385,7 @@ func (driver *Driver) controllerTests() {
 					pollingInterval).
 					Should(BeNumerically("==", initialNumberOfNodes+1))
 
-				By("Checking that the node A' is not removed and it's priority is set to 3")
+				By("Checking that the node A is not removed and it's priority is set to 3")
 				mc, err := driver.controlCluster.MCMClient.MachineV1alpha1().Machines(controlClusterNamespace).Get(context.TODO(), clone.Name, metav1.GetOptions{})
 				Expect(err).Should(BeNil())
 				Expect(mc.Annotations[mcmPriorityAnnotation]).To(Equal("3"))

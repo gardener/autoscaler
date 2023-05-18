@@ -105,21 +105,15 @@ func (driver *Driver) adjustNodeGroups() error {
 		return err
 	}
 
-	firstMDOfWorkerWithThreeZones := true
+	isFirstMDOfWorkerWithThreeZones := true
 	for _, machineDeployment := range machineDeployments.Items {
 		scaleDownMachineDeployment := machineDeployment.DeepCopy()
-		if strings.Contains(machineDeployment.Name, workerWithThreeZones) && firstMDOfWorkerWithThreeZones {
-			firstMDOfWorkerWithThreeZones = false
+		if strings.Contains(machineDeployment.Name, workerWithThreeZones) && isFirstMDOfWorkerWithThreeZones {
+			isFirstMDOfWorkerWithThreeZones = false
 			scaleDownMachineDeployment.Spec.Replicas = 1
 		} else {
 			scaleDownMachineDeployment.Spec.Replicas = 0
 		}
-		//if (index == 0 || index > 1) && machineDeployment.Spec.Replicas != 0 {
-		//	scaleDownMachineDeployment.Spec.Replicas = 0
-		//} else if index == 1 && machineDeployment.Spec.Replicas > 1 {
-		//	scaleDownMachineDeployment.Spec.Replicas = 1
-		//}
-
 		_, err := driver.controlCluster.MCMClient.MachineV1alpha1().MachineDeployments(controlClusterNamespace).Update(context.Background(), scaleDownMachineDeployment, metav1.UpdateOptions{})
 		if err != nil {
 			return err
