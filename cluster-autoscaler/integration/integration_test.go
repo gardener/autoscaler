@@ -45,6 +45,7 @@ func (driver *Driver) afterEachCheck(fn func()) {
 func removeWorkload() {
 	if flag {
 		Expect(driver.deleteWorkload()).To(BeNil())
+		By("Checking that number of Ready nodes is equal to initial")
 		Eventually(
 			driver.targetCluster.getNumberOfReadyNodes,
 			pollingTimeout,
