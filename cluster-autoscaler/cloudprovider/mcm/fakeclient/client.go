@@ -363,6 +363,7 @@ type Actions struct {
 	Update FakeResponse
 }
 
+// FakeResponse is the custom error response configuration that are used for responding to client calls
 type FakeResponse struct {
 	counter       int
 	errorMsg      string
@@ -377,6 +378,7 @@ type fakingOptions struct {
 	failAll *FakeResponse
 }
 
+// CreateFakeResponse creates a fake response for an action
 func CreateFakeResponse(counter int, errorMsg string, responseDelay time.Duration) FakeResponse {
 	return FakeResponse{
 		counter:       counter,
@@ -385,6 +387,7 @@ func CreateFakeResponse(counter int, errorMsg string, responseDelay time.Duratio
 	}
 }
 
+// DecrementCounter reduces the counter for the particular action response by 1
 func (o *FakeResponse) DecrementCounter() {
 	o.counter--
 }
@@ -409,6 +412,7 @@ func (o *FakeResponse) RunFakeInvocations() error {
 	return nil
 }
 
+// IsFakingEnabled will return true if counter is positive for the fake response
 func (o *FakeResponse) IsFakingEnabled() bool {
 	return o.counter > 0
 }

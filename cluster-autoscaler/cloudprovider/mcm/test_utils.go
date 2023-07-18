@@ -28,7 +28,7 @@ import (
 	faketyped "github.com/gardener/machine-controller-manager/pkg/client/clientset/versioned/typed/machine/v1alpha1/fake"
 	machineinformers "github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions"
 	mcmcache "github.com/gardener/machine-controller-manager/pkg/util/provider/cache"
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -137,7 +137,7 @@ func newMachines(
 				OwnerReferences: []metav1.OwnerReference{
 					{Name: msName},
 				},
-				Labels:            map[string]string{"name": mdName},
+				Labels:            map[string]string{machineDeploymentNameLabel: mdName},
 				Annotations:       map[string]string{priorityAnnotationKey: priorityAnnotationValues[i]},
 				CreationTimestamp: metav1.Now(),
 			},
@@ -217,7 +217,7 @@ func createMcmManager(
 	namespace string,
 	nodeGroups []string, controlMachineObjects, targetCoreObjects []runtime.Object,
 ) (*McmManager, *customfake.FakeObjectTrackers, []cache.InformerSynced) {
-	g := NewWithT(t)
+	g := gomega.NewWithT(t)
 	fakeControlMachineClient, controlMachineObjectTracker := customfake.NewMachineClientSet(controlMachineObjects...)
 	fakeTypedMachineClient := &faketyped.FakeMachineV1alpha1{
 		Fake: &fakeControlMachineClient.Fake,
@@ -254,8 +254,8 @@ func createMcmManager(
 	machineClasses := machineSharedInformers.MachineClasses()
 
 	internalExternalScheme := runtime.NewScheme()
-	g.Expect(machineinternal.AddToScheme(internalExternalScheme)).To(Succeed())
-	g.Expect(v1alpha1.AddToScheme(internalExternalScheme)).To(Succeed())
+	g.Expect(machineinternal.AddToScheme(internalExternalScheme)).To(gomega.Succeed())
+	g.Expect(v1alpha1.AddToScheme(internalExternalScheme)).To(gomega.Succeed())
 
 	mcmManager := McmManager{
 		namespace: namespace,
@@ -285,6 +285,6 @@ func createMcmManager(
 }
 
 func waitForCacheSync(t *testing.T, stop <-chan struct{}, hasSyncedCachesFns []cache.InformerSynced) {
-	g := NewWithT(t)
-	g.Expect(mcmcache.WaitForCacheSync(stop, hasSyncedCachesFns...)).To(BeTrue())
+	g := gomega.NewWithT(t)
+	g.Expect(mcmcache.WaitForCacheSync(stop, hasSyncedCachesFns...)).To(gomega.BeTrue())
 }
