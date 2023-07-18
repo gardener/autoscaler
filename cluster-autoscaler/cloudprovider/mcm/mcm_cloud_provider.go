@@ -358,7 +358,8 @@ func (machinedeployment *MachineDeployment) Belongs(node *apiv1.Node) (bool, err
 	return true, nil
 }
 
-// DeleteNodes deletes the nodes from the group.
+// DeleteNodes deletes the nodes from the group. It is expected that this method will not be called
+// for nodes not part of ANY machine deployment.
 func (machinedeployment *MachineDeployment) DeleteNodes(nodes []*apiv1.Node) error {
 	size, err := machinedeployment.mcmManager.GetMachineDeploymentSize(machinedeployment)
 	if err != nil {
