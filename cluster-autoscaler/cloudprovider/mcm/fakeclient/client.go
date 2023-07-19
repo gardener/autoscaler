@@ -234,7 +234,8 @@ func (t *FakeObjectTracker) Start() error {
 	}
 
 	for event := range t.ResultChan() {
-		t.dispatch(&event)
+		event := event.DeepCopy() // passing a deep copy to avoid race.
+		t.dispatch(event)
 	}
 
 	return nil
