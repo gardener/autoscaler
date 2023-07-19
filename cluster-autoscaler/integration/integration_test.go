@@ -254,7 +254,6 @@ func (driver *Driver) controllerTests() {
 				if provider != "aws" && provider != "gcp" {
 					return
 				}
-				//TODO: support this testcase for GKE once nodeTemplate in machinedeployment has the label `topology.gke.io/zone`: <zone-name>
 				storageClass, err1 := getStorageClassObject(class)
 
 				if err1 != nil {
