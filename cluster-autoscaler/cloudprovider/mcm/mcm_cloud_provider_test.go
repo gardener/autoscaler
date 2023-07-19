@@ -353,7 +353,6 @@ func TestDeleteNodes(t *testing.T) {
 				g.Expect(err).To(BeNil())
 			}
 
-			g.Expect(trackers.ControlMachine.ClearOptions()).To(BeNil())
 			machineDeployment, err := m.machineClient.MachineDeployments(m.namespace).Get(context.TODO(), entry.expect.mdName, metav1.GetOptions{})
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", entry.expect.mdReplicas))

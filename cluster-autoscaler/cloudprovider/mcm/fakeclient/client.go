@@ -260,7 +260,6 @@ func (t *FakeObjectTracker) Stop() {
 	for _, w := range t.watchers {
 		w.Stop()
 	}
-	t.watchers = []*watcher{}
 }
 
 type watcher struct {
@@ -427,13 +426,6 @@ func (o *fakingOptions) SetFailAtFakeResourceActions(resourceActions *ResourceAc
 // SetFailAllFakeResponse sets the error message for all calls from the client
 func (o *fakingOptions) SetFailAllFakeResponse(response *FakeResponse) error {
 	o.failAll = response
-	return nil
-}
-
-// ClearOptions clears any faking options that have been set
-func (o *fakingOptions) ClearOptions() error {
-	o.failAt = nil
-	o.failAll = nil
 	return nil
 }
 
