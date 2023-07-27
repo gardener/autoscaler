@@ -598,8 +598,7 @@ func (m *McmManager) updateAnnotationOnMachineBeforeDeadline(ctx context.Context
 	return nil
 }
 
-// scaleDownMachineDeploymentBeforeDeadline scales down the machine deployment by the given amount. It returns an error only when fetching/updating the machine deployment fails consequently and deadline is crossed or decrease in replica count
-// is more than the current spec.Replicas
+// scaleDownMachineDeploymentBeforeDeadline scales down the machine deployment by the provided scaleDownAmount and returns the updated spec.Replicas after scale down.
 func (m *McmManager) scaleDownMachineDeploymentBeforeDeadline(mdName string, scaleDownAmount int) (int32, error) {
 	var mdclone *v1alpha1.MachineDeployment
 	ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
@@ -609,7 +608,7 @@ func (m *McmManager) scaleDownMachineDeploymentBeforeDeadline(mdName string, sca
 		md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(mdName)
 		if err != nil {
 			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %+v", mdName, err)
-			return 0, err
+			return -1, err
 		}
 		mdclone = md.DeepCopy()
 		expectedReplicas := mdclone.Spec.Replicas - int32(scaleDownAmount)
