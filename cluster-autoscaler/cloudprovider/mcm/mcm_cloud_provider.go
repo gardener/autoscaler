@@ -22,6 +22,7 @@ Modifications Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights 
 package mcm
 
 import (
+	"context"
 	"fmt"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -315,7 +316,9 @@ func (machinedeployment *MachineDeployment) IncreaseSize(delta int) error {
 	if int(size)+delta > machinedeployment.MaxSize() {
 		return fmt.Errorf("size increase too large - desired:%d max:%d", int(size)+delta, machinedeployment.MaxSize())
 	}
-	return machinedeployment.mcmManager.SetMachineDeploymentSize(machinedeployment, size+int64(delta))
+	return machinedeployment.mcmManager.retry(func(ctx context.Context) (bool, error) {
+		return machinedeployment.mcmManager.SetMachineDeploymentSize(ctx, machinedeployment, size+int64(delta))
+	}, "MachineDeployment", "update", machinedeployment.Name)
 }
 
 // DecreaseTargetSize decreases the target size of the node group. This function
@@ -331,11 +334,14 @@ func (machinedeployment *MachineDeployment) DecreaseTargetSize(delta int) error 
 	if err != nil {
 		return err
 	}
-	if int(size)+delta < machinedeployment.minSize {
+	decreaseAmount := int(size) + delta
+	if decreaseAmount < machinedeployment.minSize {
 		klog.Warningf("Cannot go below min size= %d for machineDeployment %s, requested target size= %d . Setting target size to min size", machinedeployment.minSize, machinedeployment.Name, size+int64(delta))
-		return machinedeployment.mcmManager.SetMachineDeploymentSize(machinedeployment, int64(machinedeployment.minSize))
+		decreaseAmount = machinedeployment.minSize
 	}
-	return machinedeployment.mcmManager.SetMachineDeploymentSize(machinedeployment, size+int64(delta))
+	return machinedeployment.mcmManager.retry(func(ctx context.Context) (bool, error) {
+		return machinedeployment.mcmManager.SetMachineDeploymentSize(ctx, machinedeployment, int64(decreaseAmount))
+	}, "MachineDeployment", "update", machinedeployment.Name)
 }
 
 // Belongs returns true if the given node belongs to the NodeGroup.
