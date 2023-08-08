@@ -270,7 +270,7 @@ func createMcmManager(
 		machineClassLister:      machineClasses.Lister(),
 		nodeLister:              nodes.Lister(),
 		maxRetryTimeout:         5 * time.Second,
-		conflictRetryInterval:   1 * time.Second,
+		retryInterval:           1 * time.Second,
 	}
 
 	hasSyncedCachesFns := []cache.InformerSynced{

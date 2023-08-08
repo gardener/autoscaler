@@ -463,7 +463,7 @@ type FakeObjectTrackers struct {
 	ControlMachine, ControlCore, TargetCore *FakeObjectTracker
 }
 
-// NewFakeObjectTrackers initialize's fakeObjectTrackers initializes the fake object trackers
+// NewFakeObjectTrackers initializes fakeObjectTrackers initializes the fake object trackers
 func NewFakeObjectTrackers(controlMachine, targetCore *FakeObjectTracker) *FakeObjectTrackers {
 
 	fakeObjectTrackers := &FakeObjectTrackers{

@@ -65,9 +65,11 @@ import (
 )
 
 const (
-	defaultMaxRetryTimeout       = 1 * time.Minute
-	defaultConflictRetryInterval = 5 * time.Second
-	minResyncPeriodDefault       = 1 * time.Hour
+	defaultMaxRetryTimeout = 1 * time.Minute
+	defaultRetryInterval   = 5 * time.Second
+	// defaultPriorityValue is the default value for the priority annotation used by CA. It is set to 3 because MCM defaults the priority of machine it creates to 3.
+	defaultPriorityValue   = "3"
+	minResyncPeriodDefault = 1 * time.Hour
 	// machinePriorityAnnotation is the annotation to set machine priority while deletion
 	machinePriorityAnnotation = "machinepriority.machine.sapcloud.io"
 	// kindMachineClass is the kind for generic machine class used by the OOT providers
@@ -114,7 +116,7 @@ type McmManager struct {
 	machineClassLister      machinelisters.MachineClassLister
 	nodeLister              corelisters.NodeLister
 	maxRetryTimeout         time.Duration
-	conflictRetryInterval   time.Duration
+	retryInterval           time.Duration
 }
 
 type instanceType struct {
@@ -147,7 +149,7 @@ func init() {
 	minResyncPeriod = flag.Duration("min-resync-period", minResyncPeriodDefault, "The minimum resync period configured for the shared informers used by the MCM provider cached listers")
 }
 
-func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions, conflictRetryInterval, maxRetryTimeout time.Duration) (*McmManager, error) {
+func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions, retryInterval, maxRetryTimeout time.Duration) (*McmManager, error) {
 	var namespace = os.Getenv("CONTROL_NAMESPACE")
 
 	// controlKubeconfig is the cluster where the machine objects are deployed
@@ -237,7 +239,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 			nodeLister:              coreSharedInformers.Nodes().Lister(),
 			discoveryOpts:           discoveryOpts,
 			maxRetryTimeout:         maxRetryTimeout,
-			conflictRetryInterval:   conflictRetryInterval,
+			retryInterval:           retryInterval,
 		}
 
 		targetCoreInformerFactory.Start(m.interrupt)
@@ -317,7 +319,7 @@ func getAvailableResources(clientBuilder CoreClientBuilder) (map[schema.GroupVer
 
 // CreateMcmManager creates the McmManager
 func CreateMcmManager(discoveryOpts cloudprovider.NodeGroupDiscoveryOptions) (*McmManager, error) {
-	return createMCMManagerInternal(discoveryOpts, defaultConflictRetryInterval, defaultMaxRetryTimeout)
+	return createMCMManagerInternal(discoveryOpts, defaultRetryInterval, defaultMaxRetryTimeout)
 }
 
 // GetMachineDeploymentForMachine returns the MachineDeployment for the Machine object.
@@ -334,25 +336,25 @@ func (m *McmManager) GetMachineDeploymentForMachine(machine *Ref) (*MachineDeplo
 			klog.V(4).Infof("Machine was removed before it could be retrieved: %v", err)
 			return nil, nil
 		}
-		return nil, fmt.Errorf("Unable to fetch Machine object %s %+v", machine.Name, err)
+		return nil, fmt.Errorf("Unable to fetch Machine object %s %v", machine.Name, err)
 	}
 
 	var machineSetName, machineDeploymentName string
 	if len(machineObject.OwnerReferences) > 0 {
 		machineSetName = machineObject.OwnerReferences[0].Name
 	} else {
-		return nil, fmt.Errorf("Unable to find parent MachineSet of given Machine object %s %+v", machine.Name, err)
+		return nil, fmt.Errorf("Unable to find parent MachineSet of given Machine object %s %v", machine.Name, err)
 	}
 
 	machineSetObject, err := m.machineSetLister.MachineSets(m.namespace).Get(machineSetName)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch MachineSet object %s %+v", machineSetName, err)
+		return nil, fmt.Errorf("Unable to fetch MachineSet object %s %v", machineSetName, err)
 	}
 
 	if len(machineSetObject.OwnerReferences) > 0 {
 		machineDeploymentName = machineSetObject.OwnerReferences[0].Name
 	} else {
-		return nil, fmt.Errorf("unable to find parent MachineDeployment of given MachineSet object %s %+v", machineSetName, err)
+		return nil, fmt.Errorf("unable to find parent MachineDeployment of given MachineSet object %s %v", machineSetName, err)
 	}
 
 	mcmRef := Ref{
@@ -402,7 +404,7 @@ func (m *McmManager) Cleanup() {
 func (m *McmManager) GetMachineDeploymentSize(machinedeployment *MachineDeployment) (int64, error) {
 	md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(machinedeployment.Name)
 	if err != nil {
-		return 0, fmt.Errorf("Unable to fetch MachineDeployment object %s %+v", machinedeployment.Name, err)
+		return 0, fmt.Errorf("Unable to fetch MachineDeployment object %s %v", machinedeployment.Name, err)
 	}
 	return int64(md.Spec.Replicas), nil
 }
@@ -415,7 +417,7 @@ func (m *McmManager) SetMachineDeploymentSize(machinedeployment *MachineDeployme
 		// fetching fresh copy of machineDeployment
 		md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(machinedeployment.Name)
 		if err != nil {
-			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %+v", machinedeployment.Name, err)
+			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %v", machinedeployment.Name, err)
 			return err
 		}
 		// don't scale down during rolling update, as that could remove ready node with workload
@@ -429,10 +431,10 @@ func (m *McmManager) SetMachineDeploymentSize(machinedeployment *MachineDeployme
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				klog.Errorf("Unable to update MachineDeployment object %s, Error: %+v", machinedeployment.Name, err)
+				klog.Errorf("Unable to update MachineDeployment object %s, Error: %v, timeout occurred", machinedeployment.Name, ctx.Err())
 				return err
-			case <-time.After(m.conflictRetryInterval):
-				klog.Warningf("Unable to update MachineDeployment object %s, Error: %+v , will retry the operation", machinedeployment.Name, err)
+			case <-time.After(m.retryInterval):
+				klog.Warningf("Unable to update MachineDeployment object %s, Error: %v , will retry the operation", machinedeployment.Name, err)
 				continue
 			}
 		}
@@ -442,7 +444,7 @@ func (m *McmManager) SetMachineDeploymentSize(machinedeployment *MachineDeployme
 	return nil
 }
 
-// DeleteMachines deletes the Machines and also reduces the desired replicas of the Machinedeplyoment in parallel.
+// DeleteMachines deletes the Machines and also reduces the desired replicas of the MachineDeployment in parallel.
 func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 	if len(targetMachineRefs) == 0 {
 		return nil
@@ -454,7 +456,7 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 	// get the machine deployment and return if rolling update is not finished
 	md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(commonMachineDeployment.Name)
 	if err != nil {
-		klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %+v", commonMachineDeployment.Name, err)
+		klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %v", commonMachineDeployment.Name, err)
 		return err
 	}
 	if !isRollingUpdateFinished(md) {
@@ -470,7 +472,7 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 		return err
 	}
 	// Trying to update the machineDeployment till the deadline
-	updatedReplicas, err := m.scaleDownMachineDeploymentBeforeDeadline(commonMachineDeployment.Name, len(expectedToTerminateMachineNodePairs))
+	updatedReplicas, err := m.scaleDownMachineDeployment(commonMachineDeployment.Name, len(expectedToTerminateMachineNodePairs))
 	if err != nil {
 		return err
 	}
@@ -482,48 +484,23 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error {
 	allMachinesForMachineDeployment, err := m.getMachinesForMachineDeployment(mdName)
 	if err != nil {
-		return fmt.Errorf("unable to list all machines for node group %s, cannot proceed with scale-in of machines, Error: %+v", mdName, err)
+		return fmt.Errorf("unable to list all machines for node group %s, cannot proceed with scale-in of machines, Error: %v", mdName, err)
 	}
 
 	for _, machine := range allMachinesForMachineDeployment {
 		nodeName := machine.Labels[v1alpha1.NodeLabelKey]
-		err = func() error {
-			node, err := m.nodeLister.Get(nodeName)
-			if err != nil && !kube_errors.IsNotFound(err) {
-				return fmt.Errorf("unable to get Node object %s for machine %s, cannot proceed with scale-in of machines, Error: %+v", nodeName, machine.Name, err)
-			} else if err == nil && taints.HasToBeDeletedTaint(node) {
-				// Don't update priority annotation if the taint is present on the node
-				return nil
+		node, err := m.nodeLister.Get(nodeName)
+		if err != nil && !kube_errors.IsNotFound(err) {
+			return fmt.Errorf("unable to get Node object %s for machine %s, cannot proceed with scale-in of machines, Error: %v", nodeName, machine.Name, err)
+		} else if err == nil && taints.HasToBeDeletedTaint(node) {
+			// Don't update priority annotation if the taint is present on the node
+			continue
+		}
+		val, ok := machine.Annotations[machinePriorityAnnotation]
+		if ok && val != defaultPriorityValue {
+			if err := m.updateAnnotationOnMachine(machine.Name, machinePriorityAnnotation, defaultPriorityValue); err != nil {
+				return fmt.Errorf("could not reset priority annotation on machine %s; timed out, error: %v", machine.Name, err)
 			}
-			val, ok := machine.Annotations[machinePriorityAnnotation]
-			if ok && val != "3" {
-				ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
-				defer cancelFn()
-				for {
-					mc, err := m.machineLister.Machines(m.namespace).Get(machine.Name)
-					if err != nil {
-						klog.Errorf("Unable to fetch Machine object %s, Error: %+v", mc.Name, err)
-						return err
-					}
-					clone := mc.DeepCopy()
-					clone.Annotations[machinePriorityAnnotation] = "3"
-					_, err = m.machineClient.Machines(m.namespace).Update(ctx, clone, metav1.UpdateOptions{})
-					if err != nil {
-						select {
-						case <-ctx.Done():
-							return fmt.Errorf("could not reset priority annotation on machine %s; timed out, error: %+v", clone.Name, err)
-						case <-time.After(m.conflictRetryInterval):
-							klog.Warningf("could not reset priority annotation for machine %s; Error: %+v, will retry the operation", clone.Name, err)
-							continue
-						}
-					}
-					break
-				}
-			}
-			return nil
-		}()
-		if err != nil {
-			return err
 		}
 	}
 	return nil
@@ -534,41 +511,32 @@ func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref, mdN
 	var expectedToTerminateMachineNodePairs []machineNameNodeNamePair
 	for _, machineRef := range targetMachineRefs {
 		// Trying to update the priority of machineRef till m.maxRetryTimeout
-		ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
-		err := func() error {
-			defer cancelFn()
-			for {
-				mc, err := m.machineLister.Machines(m.namespace).Get(machineRef.Name)
-				if err != nil {
-					klog.Errorf("Unable to fetch Machine object %s, Error: %+v", machineRef.Name, err)
-					return err
-				}
-				if isMachineTerminating(mc) {
-					break
-				}
-				expectedToTerminateMachineNodePairs = append(expectedToTerminateMachineNodePairs, machineNameNodeNamePair{mc.Name, mc.Labels["node"]})
-				if err = m.updateAnnotationOnMachineBeforeDeadline(ctx, mc.Name, machinePriorityAnnotation, "1"); err != nil {
-					return err
-				}
-				// Break out of loop when update succeeds
-				klog.Infof("Machine %s of machineDeployment %s marked with priority 1 successfully", machineRef.Name, mdName)
-				break
-			}
-			return nil
-		}()
+		mc, err := m.machineLister.Machines(m.namespace).Get(machineRef.Name)
 		if err != nil {
+			klog.Errorf("Unable to fetch Machine object %s, Error: %v", machineRef.Name, err)
 			return nil, err
 		}
+		if isMachineTerminating(mc) {
+			continue
+		}
+		expectedToTerminateMachineNodePairs = append(expectedToTerminateMachineNodePairs, machineNameNodeNamePair{mc.Name, mc.Labels["node"]})
+		if err = m.updateAnnotationOnMachine(mc.Name, machinePriorityAnnotation, "1"); err != nil {
+			return nil, err
+		}
+		// Break out of loop when update succeeds
+		klog.Infof("Machine %s of machineDeployment %s marked with priority 1 successfully", machineRef.Name, mdName)
 	}
 	return expectedToTerminateMachineNodePairs, nil
 }
 
-// updateAnnotationOnMachineBeforeDeadline returns error only when updating the annotations on machine has been failing consequently and deadline is crossed
-func (m *McmManager) updateAnnotationOnMachineBeforeDeadline(ctx context.Context, mcName string, key, val string) error {
+// updateAnnotationOnMachine returns error only when updating the annotations on machine has been failing consequently and deadline is crossed
+func (m *McmManager) updateAnnotationOnMachine(mcName string, key, val string) error {
+	ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
+	defer cancelFn()
 	for {
 		machine, err := m.machineLister.Machines(m.namespace).Get(mcName)
 		if err != nil {
-			klog.Errorf("Unable to fetch Machine object %s, Error: %+v", mcName, err)
+			klog.Errorf("Unable to fetch Machine object %s, Error: %v", mcName, err)
 			return err
 		}
 		clone := machine.DeepCopy()
@@ -586,10 +554,10 @@ func (m *McmManager) updateAnnotationOnMachineBeforeDeadline(ctx context.Context
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				klog.Errorf("Unable to update Machine object %s, Error: %+v, timeout occurred", machine.Name, err)
+				klog.Errorf("Unable to update annotation on Machine object %s, Error: %v, timeout occurred", machine.Name, ctx.Err())
 				return err
-			case <-time.After(m.conflictRetryInterval):
-				klog.Warningf("Unable to update Machine object %s, Error: %+v , will retry the operation", machine.Name, err)
+			case <-time.After(m.retryInterval):
+				klog.Warningf("Unable to update annotation on Machine object %s, Error: %v , will retry the operation", machine.Name, err)
 				continue
 			}
 		}
@@ -598,8 +566,8 @@ func (m *McmManager) updateAnnotationOnMachineBeforeDeadline(ctx context.Context
 	return nil
 }
 
-// scaleDownMachineDeploymentBeforeDeadline scales down the machine deployment by the provided scaleDownAmount and returns the updated spec.Replicas after scale down.
-func (m *McmManager) scaleDownMachineDeploymentBeforeDeadline(mdName string, scaleDownAmount int) (int32, error) {
+// scaleDownMachineDeployment scales down the machine deployment by the provided scaleDownAmount and returns the updated spec.Replicas after scale down.
+func (m *McmManager) scaleDownMachineDeployment(mdName string, scaleDownAmount int) (int32, error) {
 	var mdclone *v1alpha1.MachineDeployment
 	ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
 	defer cancelFn()
@@ -607,7 +575,7 @@ func (m *McmManager) scaleDownMachineDeploymentBeforeDeadline(mdName string, sca
 		// fetch fresh copy of machineDeployment
 		md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(mdName)
 		if err != nil {
-			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %+v", mdName, err)
+			klog.Errorf("Unable to fetch MachineDeployment object %s, Error: %v", mdName, err)
 			return -1, err
 		}
 		mdclone = md.DeepCopy()
@@ -624,16 +592,34 @@ func (m *McmManager) scaleDownMachineDeploymentBeforeDeadline(mdName string, sca
 		if err != nil {
 			select {
 			case <-ctx.Done():
-				klog.Errorf("Unable to update MachineDeployment object %s, Error: %+v , timeout occurred", mdName, err)
+				klog.Errorf("Unable to update MachineDeployment object %s, Error: %v , timeout occurred", mdName, ctx.Err())
 				return md.Spec.Replicas, err
-			case <-time.After(m.conflictRetryInterval):
-				klog.Warningf("Unable to update MachineDeployment object %s, Error: %+v , will retry the operation", mdName, err)
+			case <-time.After(m.retryInterval):
+				klog.Warningf("Unable to update MachineDeployment object %s, Error: %v , will retry the operation", mdName, err)
 				continue
 			}
 		}
 		break
 	}
 	return mdclone.Spec.Replicas, nil
+}
+
+func (m *McmManager) retry(fn func() error, resourceType string, operation string, resourceName string) error {
+	ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(m.maxRetryTimeout))
+	defer cancelFn()
+	for {
+		err := fn()
+		if err != nil {
+			select {
+			case <-ctx.Done():
+				klog.Errorf("Context has been cancelled, %s of %s object %s will not be retried, Error: %v , timeout occurred", operation, resourceType, resourceName, ctx.Err())
+				return err
+			case <-time.After(m.retryInterval):
+				klog.Warningf("Unable to perform %s on %s resource object %s, Error: %v , will retry the operation", operation, resourceType, resourceName, err)
+				continue
+			}
+		}
+	}
 }
 
 // GetMachineDeploymentNodes returns the set of Nodes which belongs to the MachineDeployment.
@@ -709,7 +695,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 
 	md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(machinedeployment.Name)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch MachineDeployment object %s, Error: %+v", machinedeployment.Name, err)
+		return nil, fmt.Errorf("unable to fetch MachineDeployment object %s, Error: %v", machinedeployment.Name, err)
 	}
 
 	var (
@@ -727,14 +713,14 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 	selector = selector.Add(*req)
 	nodes, err := m.nodeLister.List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("error fetching node object for worker pool %s, Error: %+v", workerPool, err)
+		return nil, fmt.Errorf("error fetching node object for worker pool %s, Error: %v", workerPool, err)
 	}
 
 	switch machineClass.Kind {
 	case kindMachineClass:
 		mc, err := m.machineClassLister.MachineClasses(m.namespace).Get(machineClass.Name)
 		if err != nil {
-			return nil, fmt.Errorf("unable to fetch %s for %s, Error: %+v", kindMachineClass, machineClass.Name, err)
+			return nil, fmt.Errorf("unable to fetch %s for %s, Error: %v", kindMachineClass, machineClass.Name, err)
 		}
 
 		if nodeTemplateAttributes := mc.NodeTemplate; nodeTemplateAttributes != nil {
@@ -778,7 +764,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			var providerSpec *awsapis.AWSProviderSpec
 			err = json.Unmarshal(mc.ProviderSpec.Raw, &providerSpec)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to convert from %s to %s for %s, Error: %+v", kindMachineClass, providerAWS, machinedeployment.Name, err)
+				return nil, fmt.Errorf("Unable to convert from %s to %s for %s, Error: %v", kindMachineClass, providerAWS, machinedeployment.Name, err)
 			}
 
 			awsInstance, exists := AWSInstanceTypes[providerSpec.MachineType]
@@ -799,7 +785,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			var providerSpec *azureapis.AzureProviderSpec
 			err = json.Unmarshal(mc.ProviderSpec.Raw, &providerSpec)
 			if err != nil {
-				return nil, fmt.Errorf("Unable to convert from %s to %s for %s, Error: %+v", kindMachineClass, providerAzure, machinedeployment.Name, err)
+				return nil, fmt.Errorf("Unable to convert from %s to %s for %s, Error: %v", kindMachineClass, providerAzure, machinedeployment.Name, err)
 			}
 			azureInstance, exists := AzureInstanceTypes[providerSpec.Properties.HardwareProfile.VMSize]
 			if !exists {
