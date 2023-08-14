@@ -89,6 +89,8 @@ const (
 	newISAvailableReason = "NewMachineSetAvailable"
 	// conditionTrue means the given condition status is true
 	conditionTrue v1alpha1.ConditionStatus = "True"
+	// machineDeploymentNameLabel key for Machine Deployment name in machine labels
+	machineDeploymentNameLabel = "name"
 )
 
 var (
@@ -440,10 +442,6 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 	if !isRollingUpdateFinished(md) {
 		return fmt.Errorf("MachineDeployment %s is under rolling update , cannot reduce replica count", commonMachineDeployment.Name)
 	}
-	// update priority of all machines in the machineDeployment to 3 except the ones that have nodes with the ToBeDeleted taint
-	if err = m.resetPriorityForNotToBeDeletedMachines(commonMachineDeployment.Name); err != nil {
-		return err
-	}
 	// update priorities of machines to be deleted except the ones already in termination to 1
 	scaleDownAmount, err := m.prioritizeMachinesForDeletion(targetMachineRefs, commonMachineDeployment.Name)
 	if err != nil {
@@ -454,8 +452,8 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 		return m.scaleDownMachineDeployment(ctx, commonMachineDeployment.Name, scaleDownAmount)
 	}, "MachineDeployment", "update", commonMachineDeployment.Name)
 	if err != nil {
-		klog.Errorf("unable to scale in machine deployment %s, err:%v", commonMachineDeployment.Name, err)
-		return fmt.Errorf("unable to scale in machine deployment %s, err: %v", commonMachineDeployment.Name, err)
+		klog.Errorf("unable to scale in machine deployment %s, Error: %v", commonMachineDeployment.Name, err)
+		return fmt.Errorf("unable to scale in machine deployment %s, Error: %v", commonMachineDeployment.Name, err)
 	}
 	return nil
 }
@@ -464,7 +462,7 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error {
 	allMachinesForMachineDeployment, err := m.getMachinesForMachineDeployment(mdName)
 	if err != nil {
-		return fmt.Errorf("unable to list all machines for node group %s, cannot proceed with scale-in of machines, Error: %v", mdName, err)
+		return fmt.Errorf("unable to list all machines for node group %s, Error: %v", mdName, err)
 	}
 	for _, machine := range allMachinesForMachineDeployment {
 		val, ok := machine.Annotations[machinePriorityAnnotation]
@@ -480,8 +478,8 @@ func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error
 				}
 				return m.updateAnnotationOnMachine(ctx, machine.Name, machinePriorityAnnotation, defaultPriorityValue)
 			}, "Machine", "update", machine.Name); err != nil {
-				klog.Errorf("could not reset priority annotation on machine %s; aborting scale in of machine deployment, error: %v", machine.Name, err)
-				return fmt.Errorf("could not reset priority annotation on machine %s; aborting scale in of machine deployment, error: %v", machine.Name, err)
+				klog.Errorf("could not reset priority annotation on machine %s, Error: %v", machine.Name, err)
+				return err
 			}
 		}
 	}
@@ -496,6 +494,10 @@ func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref, mdN
 		if err := m.retry(func(ctx context.Context) (bool, error) {
 			mc, err := m.machineLister.Machines(m.namespace).Get(machineRef.Name)
 			if err != nil {
+				if kube_errors.IsNotFound(err) {
+					klog.Warningf("Machine %s not found, skipping prioritizing it for deletion", machineRef.Name)
+					return false, nil
+				}
 				klog.Errorf("Unable to fetch Machine object %s, Error: %v", machineRef.Name, err)
 				return true, err
 			}
@@ -505,8 +507,8 @@ func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref, mdN
 			expectedToTerminateMachineNodePairs[mc.Name] = mc.Labels["node"]
 			return m.updateAnnotationOnMachine(ctx, mc.Name, machinePriorityAnnotation, "1")
 		}, "Machine", "update", machineRef.Name); err != nil {
-			klog.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, err: %v", machineRef.Name, err)
-			return 0, fmt.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, err: %v", machineRef.Name, err)
+			klog.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, Error: %v", machineRef.Name, err)
+			return 0, fmt.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, Error: %v", machineRef.Name, err)
 		}
 		// Break out of loop when update succeeds
 		klog.Infof("Machine %s of machineDeployment %s marked with priority 1 successfully", machineRef.Name, mdName)
@@ -519,6 +521,10 @@ func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref, mdN
 func (m *McmManager) updateAnnotationOnMachine(ctx context.Context, mcName string, key, val string) (bool, error) {
 	machine, err := m.machineLister.Machines(m.namespace).Get(mcName)
 	if err != nil {
+		if kube_errors.IsNotFound(err) {
+			klog.Warningf("Machine %s not found, skipping annotation update", mcName)
+			return false, nil
+		}
 		klog.Errorf("Unable to fetch Machine object %s, Error: %v", mcName, err)
 		return true, err
 	}
@@ -568,17 +574,18 @@ func (m *McmManager) retry(fn func(ctx context.Context) (bool, error), resourceT
 	tick := time.NewTicker(m.retryInterval)
 	defer tick.Stop()
 	for {
-		retry, err := fn(ctx)
-		if !retry {
+		canRetry, err := fn(ctx)
+		if !canRetry {
 			return err
 		}
 		if err != nil {
+			klog.Warningf("Unable to perform %s on %s object %s, Error: %v", operation, resourceType, resourceName, err)
 			select {
 			case <-ctx.Done():
 				klog.Errorf("Context has been cancelled, %s of %s object %s will not be retried, Error: %v , timeout occurred", operation, resourceType, resourceName, ctx.Err())
 				return err
 			case <-tick.C:
-				klog.Warningf("Unable to perform %s on %s resource object %s, Error: %v , will retry the operation", operation, resourceType, resourceName, err)
+				klog.Warningf("Will retry the operation %s on %s object %s", operation, resourceType, resourceName)
 				continue
 			}
 		}

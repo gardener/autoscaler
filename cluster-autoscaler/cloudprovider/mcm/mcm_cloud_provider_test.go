@@ -166,7 +166,7 @@ func TestDeleteNodes(t *testing.T) {
 				machines:   newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        fmt.Errorf("unable to scale in machine deployment machinedeployment-1, err: %v", mdUpdateErrorMsg),
+				err:        fmt.Errorf("unable to scale in machine deployment machinedeployment-1, Error: %v", mdUpdateErrorMsg),
 			},
 		},
 		{
@@ -244,7 +244,7 @@ func TestDeleteNodes(t *testing.T) {
 				machines:   nil,
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        fmt.Errorf("could not prioritize machine machine-1 for deletion, aborting scale in of machine deployment, err: %s", mcUpdateErrorMsg),
+				err:        fmt.Errorf("could not prioritize machine machine-1 for deletion, aborting scale in of machine deployment, Error: %s", mcUpdateErrorMsg),
 			},
 		},
 		{

@@ -25,10 +25,10 @@ import (
 )
 
 const (
-	// annotaion which makes dwd skip the scaling of component
+	// dwdAnnotation annotation which makes dwd skip the scaling of component
 	dwdAnnotation string = "dependency-watchdog.gardener.cloud/ignore-scaling"
-	// annotaion to skip the scaling down of exrta/unused node.
-	ignoreScaledownAnnotation string = "cluster-autoscaler.kubernetes.io/scale-down-disabled"
+	// ignoreScaleDownAnnotation is the annotation to skip the scaling down of extra/unused node.
+	ignoreScaleDownAnnotation string = "cluster-autoscaler.kubernetes.io/scale-down-disabled"
 	mcmPriorityAnnotation            = "machinepriority.machine.sapcloud.io"
 	mcdNameLabel                     = "name"
 	workerLabelKey                   = "worker.garden.sapcloud.io/group"
@@ -457,7 +457,7 @@ func (driver *Driver) getOldestAndLatestNode() (*v1.Node, *v1.Node, error) {
 }
 
 func (driver *Driver) addAnnotationToNode(node *v1.Node) error {
-	node.ObjectMeta.Annotations[ignoreScaledownAnnotation] = "true"
+	node.ObjectMeta.Annotations[ignoreScaleDownAnnotation] = "true"
 	_, err := driver.targetCluster.Clientset.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
 	if err != nil {
 		return err
@@ -466,7 +466,7 @@ func (driver *Driver) addAnnotationToNode(node *v1.Node) error {
 }
 
 func (driver *Driver) removeAnnotationFromNode(node *v1.Node) error {
-	delete(node.ObjectMeta.Annotations, ignoreScaledownAnnotation)
+	delete(node.ObjectMeta.Annotations, ignoreScaleDownAnnotation)
 	_, err := driver.targetCluster.Clientset.CoreV1().Nodes().Update(context.Background(), node, metav1.UpdateOptions{})
 	if err != nil {
 		return err
