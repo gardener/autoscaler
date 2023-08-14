@@ -44,8 +44,7 @@ const (
 
 	// GPULabel is the label added to nodes with GPU resource.
 	// TODO: Align on a GPU Label for Gardener.
-	GPULabel                   = "gardener.cloud/accelerator"
-	machineDeploymentNameLabel = "name"
+	GPULabel = "gardener.cloud/accelerator"
 )
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
@@ -195,7 +194,13 @@ func (mcm *mcmCloudProvider) GetResourceLimiter() (*cloudprovider.ResourceLimite
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
 // In particular the list of node groups returned by NodeGroups can change as a result of CloudProvider.Refresh().
 func (mcm *mcmCloudProvider) Refresh() error {
-	// If we don't need to check between every reconcile, we will have return nil here
+	for _, machineDeployment := range mcm.machinedeployments {
+		err := mcm.mcmManager.resetPriorityForNotToBeDeletedMachines(machineDeployment.Name)
+		if err != nil {
+			klog.Errorf("failed to reset priority for machines in MachineDeployment %s, err: %v", machineDeployment.Name, err.Error())
+			return err
+		}
+	}
 	return nil
 }
 
@@ -313,11 +318,12 @@ func (machinedeployment *MachineDeployment) IncreaseSize(delta int) error {
 	if err != nil {
 		return err
 	}
-	if int(size)+delta > machinedeployment.MaxSize() {
-		return fmt.Errorf("size increase too large - desired:%d max:%d", int(size)+delta, machinedeployment.MaxSize())
+	targetSize := int(size) + delta
+	if targetSize > machinedeployment.MaxSize() {
+		return fmt.Errorf("size increase too large - desired:%d max:%d", targetSize, machinedeployment.MaxSize())
 	}
 	return machinedeployment.mcmManager.retry(func(ctx context.Context) (bool, error) {
-		return machinedeployment.mcmManager.SetMachineDeploymentSize(ctx, machinedeployment, size+int64(delta))
+		return machinedeployment.mcmManager.SetMachineDeploymentSize(ctx, machinedeployment, int64(targetSize))
 	}, "MachineDeployment", "update", machinedeployment.Name)
 }
 

@@ -50,21 +50,6 @@ type setup struct {
 	targetCoreFakeResourceActions     *customfake.ResourceActions
 	controlMachineFakeResourceActions *customfake.ResourceActions
 }
-type action struct {
-	node *corev1.Node
-}
-type expect struct {
-	machines   []*v1alpha1.Machine
-	mdName     string
-	mdReplicas int32
-	err        error
-}
-type data struct {
-	name   string
-	setup  setup
-	action action
-	expect expect
-}
 
 func setupEnv(setup *setup) ([]runtime.Object, []runtime.Object) {
 	var controlMachineObjects []runtime.Object
@@ -91,7 +76,21 @@ func setupEnv(setup *setup) ([]runtime.Object, []runtime.Object) {
 }
 
 func TestDeleteNodes(t *testing.T) {
-
+	type action struct {
+		node *corev1.Node
+	}
+	type expect struct {
+		machines   []*v1alpha1.Machine
+		mdName     string
+		mdReplicas int32
+		err        error
+	}
+	type data struct {
+		name   string
+		setup  setup
+		action action
+		expect expect
+	}
 	table := []data{
 		{
 			"should scale down machine deployment to remove a node",
@@ -124,40 +123,6 @@ func TestDeleteNodes(t *testing.T) {
 				machines:   newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
 				mdName:     "machinedeployment-1",
 				mdReplicas: 0,
-				err:        nil,
-			},
-		},
-		{
-			"should reset priority of the other nodes to 3 and scale down machine deployment",
-			setup{
-				nodes:              newNodes(2, "fakeID", []bool{true, false}),
-				machines:           newMachines(2, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3", "1"}, []bool{false, false}),
-				machineSets:        newMachineSets(1, "machinedeployment-1"),
-				machineDeployments: newMachineDeployments(1, 2, nil, nil, nil),
-				nodeGroups:         []string{nodeGroup1},
-			},
-			action{node: newNodes(1, "fakeID", []bool{true})[0]},
-			expect{
-				machines:   newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
-				mdName:     "machinedeployment-1",
-				mdReplicas: 1,
-				err:        nil,
-			},
-		},
-		{
-			"should scale down machine deployment and not reset priority of the other node to 3 if ToBeDeleted taint is present",
-			setup{
-				nodes:              newNodes(2, "fakeID", []bool{true, true}),
-				machines:           newMachines(2, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3", "1"}, []bool{false, false}),
-				machineSets:        newMachineSets(1, "machinedeployment-1"),
-				machineDeployments: newMachineDeployments(1, 2, nil, nil, nil),
-				nodeGroups:         []string{nodeGroup1},
-			},
-			action{node: newNodes(1, "fakeID", []bool{true})[0]},
-			expect{
-				machines:   newMachines(2, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1", "1"}, []bool{false, false}),
-				mdName:     "machinedeployment-1",
-				mdReplicas: 1,
 				err:        nil,
 			},
 		},
@@ -261,28 +226,6 @@ func TestDeleteNodes(t *testing.T) {
 			},
 		},
 		{
-			"no scale down of machine deployment if priority reset of other machine fails",
-			setup{
-				nodes:              newNodes(2, "fakeID", []bool{true, false}),
-				machines:           newMachines(2, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3", "1"}, []bool{false, false}),
-				machineSets:        newMachineSets(1, "machinedeployment-1"),
-				machineDeployments: newMachineDeployments(1, 2, nil, nil, nil),
-				nodeGroups:         []string{nodeGroup1},
-				controlMachineFakeResourceActions: &customfake.ResourceActions{
-					Machine: customfake.Actions{
-						Update: customfake.CreateFakeResponse(math.MaxInt32, mcUpdateErrorMsg, 0),
-					},
-				},
-			},
-			action{node: newNodes(1, "fakeID", []bool{true})[0]},
-			expect{
-				machines:   []*v1alpha1.Machine{newMachine("machine-2", "fakeID", nil, "machinedeployment-1", "machineset-1", "1", false)},
-				mdName:     "machinedeployment-1",
-				mdReplicas: 2,
-				err:        fmt.Errorf("could not reset priority annotation on machine machine-2; aborting scale in of machine deployment, error: unable to update machine"),
-			},
-		},
-		{
 			"no scale down of machine deployment if priority of the targeted machine cannot be updated to 1",
 			setup{
 				nodes:              newNodes(2, "fakeID", []bool{true, false}),
@@ -375,6 +318,97 @@ func TestDeleteNodes(t *testing.T) {
 				if !flag {
 					g.Expect(machine.Annotations[priorityAnnotationKey]).To(Equal("3"))
 				}
+			}
+		})
+	}
+}
+
+func TestRefresh(t *testing.T) {
+	type expect struct {
+		machines []*v1alpha1.Machine
+		err      error
+	}
+	type data struct {
+		name   string
+		setup  setup
+		expect expect
+	}
+	table := []data{
+		{
+			"should reset priority of a machine with node without ToBeDeletedTaint to 3",
+			setup{
+				nodes:              newNodes(1, "fakeID", []bool{false}),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+			},
+			expect{
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3"}, []bool{false}),
+				err:      nil,
+			},
+		},
+		{
+			"should not reset priority of a machine to 3 if the node has ToBeDeleted taint",
+			setup{
+				nodes:              newNodes(1, "fakeID", []bool{true}),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+			},
+			expect{
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
+				err:      nil,
+			},
+		},
+		{
+			"priority reset of machine fails",
+			setup{
+				nodes:              newNodes(1, "fakeID", []bool{false}),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				controlMachineFakeResourceActions: &customfake.ResourceActions{
+					Machine: customfake.Actions{
+						Update: customfake.CreateFakeResponse(math.MaxInt32, mcUpdateErrorMsg, 0),
+					},
+				},
+				nodeGroups: []string{nodeGroup2},
+			},
+			expect{
+				machines: []*v1alpha1.Machine{newMachine("machine-1", "fakeID", nil, "machinedeployment-1", "machineset-1", "1", false)},
+				err:      fmt.Errorf(mcUpdateErrorMsg),
+			},
+		},
+	}
+	for _, entry := range table {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			stop := make(chan struct{})
+			defer close(stop)
+			controlMachineObjects, targetCoreObjects := setupEnv(&entry.setup)
+			m, trackers, hasSyncedCacheFns := createMcmManager(t, stop, testNamespace, entry.setup.nodeGroups, controlMachineObjects, targetCoreObjects)
+			defer trackers.Stop()
+			waitForCacheSync(t, stop, hasSyncedCacheFns)
+
+			if entry.setup.targetCoreFakeResourceActions != nil {
+				g.Expect(trackers.TargetCore.SetFailAtFakeResourceActions(entry.setup.targetCoreFakeResourceActions)).To(BeNil())
+			}
+			if entry.setup.controlMachineFakeResourceActions != nil {
+				g.Expect(trackers.ControlMachine.SetFailAtFakeResourceActions(entry.setup.controlMachineFakeResourceActions)).To(BeNil())
+			}
+			mcmCloudProvider, err := BuildMcmCloudProvider(m, nil)
+			g.Expect(err).To(BeNil())
+			err = mcmCloudProvider.Refresh()
+			if entry.expect.err != nil {
+				g.Expect(err).To(Equal(entry.expect.err))
+			} else {
+				g.Expect(err).To(BeNil())
+			}
+			for _, mc := range entry.expect.machines {
+				machine, err := m.machineClient.Machines(m.namespace).Get(context.TODO(), mc.Name, metav1.GetOptions{})
+				g.Expect(err).To(BeNil())
+				g.Expect(mc.Annotations[priorityAnnotationKey]).To(Equal(machine.Annotations[priorityAnnotationKey]))
 			}
 		})
 	}
