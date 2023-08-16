@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/klog/v2"
 	"sync"
 	"time"
 
@@ -89,7 +90,7 @@ func (t *FakeObjectTracker) Get(gvr schema.GroupVersionResource, ns, name string
 	return t.delegatee.Get(gvr, ns, name)
 }
 
-// Create receives an create event with the object
+// Create receives a create event with the object
 func (t *FakeObjectTracker) Create(gvr schema.GroupVersionResource, obj runtime.Object, ns string) error {
 	if t.fakingOptions.failAll != nil {
 		err := t.fakingOptions.failAll.RunFakeInvocations()
@@ -104,11 +105,11 @@ func (t *FakeObjectTracker) Create(gvr schema.GroupVersionResource, obj runtime.
 	}
 
 	if t.FakeWatcher == nil {
-		return errors.New("Error sending event on a tracker with no watch support")
+		return errors.New("error sending event on a tracker with no watch support")
 	}
 
 	if t.IsStopped() {
-		return errors.New("Error sending event on a stopped tracker")
+		return errors.New("error sending event on a stopped tracker")
 	}
 
 	t.FakeWatcher.Add(obj)
@@ -142,18 +143,18 @@ func (t *FakeObjectTracker) Update(gvr schema.GroupVersionResource, obj runtime.
 	}
 
 	if t.FakeWatcher == nil {
-		return errors.New("Error sending event on a tracker with no watch support")
+		return errors.New("error sending event on a tracker with no watch support")
 	}
 
 	if t.IsStopped() {
-		return errors.New("Error sending event on a stopped tracker")
+		return errors.New("error sending event on a stopped tracker")
 	}
 
 	t.FakeWatcher.Modify(obj)
 	return nil
 }
 
-// List receives an list event with the object
+// List receives a list event with the object
 func (t *FakeObjectTracker) List(gvr schema.GroupVersionResource, gvk schema.GroupVersionKind, ns string) (runtime.Object, error) {
 	if t.fakingOptions.failAll != nil {
 		err := t.fakingOptions.failAll.RunFakeInvocations()
@@ -184,18 +185,18 @@ func (t *FakeObjectTracker) Delete(gvr schema.GroupVersionResource, ns, name str
 	}
 
 	if t.FakeWatcher == nil {
-		return errors.New("Error sending event on a tracker with no watch support")
+		return errors.New("error sending event on a tracker with no watch support")
 	}
 
 	if t.IsStopped() {
-		return errors.New("Error sending event on a stopped tracker")
+		return errors.New("error sending event on a stopped tracker")
 	}
 
 	t.FakeWatcher.Delete(obj)
 	return nil
 }
 
-// Watch receives an watch event with the object
+// Watch receives a watch event with the object
 func (t *FakeObjectTracker) Watch(gvr schema.GroupVersionResource, name string) (watch.Interface, error) {
 	if t.fakingOptions.failAll != nil {
 		err := t.fakingOptions.failAll.RunFakeInvocations()
@@ -206,9 +207,9 @@ func (t *FakeObjectTracker) Watch(gvr schema.GroupVersionResource, name string) 
 	return t.delegatee.Watch(gvr, name)
 }
 
-func (t *FakeObjectTracker) watchReactionfunc(action k8stesting.Action) (bool, watch.Interface, error) {
+func (t *FakeObjectTracker) watchReactionFunc(action k8stesting.Action) (bool, watch.Interface, error) {
 	if t.FakeWatcher == nil {
-		return false, nil, errors.New("Cannot watch on a tracker with no watch support")
+		return false, nil, errors.New("cannot watch on a tracker with no watch support")
 	}
 
 	switch a := action.(type) {
@@ -217,20 +218,25 @@ func (t *FakeObjectTracker) watchReactionfunc(action k8stesting.Action) (bool, w
 			FakeWatcher: watch.NewFake(),
 			action:      a,
 		}
-		go w.dispatchInitialObjects(a, t)
+		go func() {
+			err := w.dispatchInitialObjects(a, t)
+			if err != nil {
+				klog.Errorf("error dispatching initial objects, Err: %v", err)
+			}
+		}()
 		t.trackerMutex.Lock()
 		defer t.trackerMutex.Unlock()
 		t.watchers = append(t.watchers, w)
 		return true, w, nil
 	default:
-		return false, nil, fmt.Errorf("Expected WatchAction but got %v", action)
+		return false, nil, fmt.Errorf("expected WatchAction but got %v", action)
 	}
 }
 
 // Start begins tracking of an FakeObjectTracker
 func (t *FakeObjectTracker) Start() error {
 	if t.FakeWatcher == nil {
-		return errors.New("Tracker has no watch support")
+		return errors.New("tracker has no watch support")
 	}
 
 	for event := range t.ResultChan() {
@@ -250,7 +256,7 @@ func (t *FakeObjectTracker) dispatch(event *watch.Event) {
 // Stop terminates tracking of an FakeObjectTracker
 func (t *FakeObjectTracker) Stop() {
 	if t.FakeWatcher == nil {
-		panic(errors.New("Tracker has no watch support"))
+		panic(errors.New("tracker has no watch support"))
 	}
 
 	t.trackerMutex.Lock()
@@ -357,9 +363,7 @@ type ResourceActions struct {
 
 // Actions contains the actions whose response can be faked
 type Actions struct {
-	Create FakeResponse
 	Get    FakeResponse
-	Delete FakeResponse
 	Update FakeResponse
 }
 
@@ -418,15 +422,13 @@ func (o *FakeResponse) IsFakingEnabled() bool {
 }
 
 // SetFailAtFakeResourceActions sets up the errorMessage to be returned on specific calls
-func (o *fakingOptions) SetFailAtFakeResourceActions(resourceActions *ResourceActions) error {
+func (o *fakingOptions) SetFailAtFakeResourceActions(resourceActions *ResourceActions) {
 	o.failAt = resourceActions
-	return nil
 }
 
 // SetFailAllFakeResponse sets the error message for all calls from the client
-func (o *fakingOptions) SetFailAllFakeResponse(response *FakeResponse) error {
+func (o *fakingOptions) SetFailAllFakeResponse(response *FakeResponse) {
 	o.failAll = response
-	return nil
 }
 
 // NewMachineClientSet returns a clientset that will respond with the provided objects.
@@ -438,7 +440,7 @@ func NewMachineClientSet(objects ...runtime.Object) (*fakeuntyped.Clientset, *Fa
 	var codecs = serializer.NewCodecFactory(scheme)
 
 	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
-	fakeuntyped.AddToScheme(scheme)
+	_ = fakeuntyped.AddToScheme(scheme)
 
 	o := &FakeObjectTracker{
 		FakeWatcher: watch.NewFake(),
@@ -453,7 +455,7 @@ func NewMachineClientSet(objects ...runtime.Object) (*fakeuntyped.Clientset, *Fa
 
 	cs := &fakeuntyped.Clientset{}
 	cs.Fake.AddReactor("*", "*", k8stesting.ObjectReaction(o))
-	cs.Fake.AddWatchReactor("*", o.watchReactionfunc)
+	cs.Fake.AddWatchReactor("*", o.watchReactionFunc)
 
 	return cs, o
 }
@@ -476,12 +478,28 @@ func NewFakeObjectTrackers(controlMachine, targetCore *FakeObjectTracker) *FakeO
 
 // Start starts all object trackers as go routines
 func (o *FakeObjectTrackers) Start() {
-	go o.ControlMachine.Start()
+	go func() {
+		err := o.ControlMachine.Start()
+		if err != nil {
+			klog.Errorf("failed to start machine object tracker, Err: %v", err)
+		}
+	}()
+
 	// this check is for the CA case where ControlCore is nil
 	if o.ControlCore != nil {
-		go o.ControlCore.Start()
+		go func() {
+			err := o.ControlCore.Start()
+			if err != nil {
+				klog.Errorf("failed to start control core object tracker, Err: %v", err)
+			}
+		}()
 	}
-	go o.TargetCore.Start()
+	go func() {
+		err := o.TargetCore.Start()
+		if err != nil {
+			klog.Errorf("failed to start target core object tracker, Err: %v", err)
+		}
+	}()
 }
 
 // Stop stops all object trackers
@@ -504,7 +522,7 @@ func NewCoreClientSet(objects ...runtime.Object) (*Clientset, *FakeObjectTracker
 	var codecs = serializer.NewCodecFactory(scheme)
 
 	metav1.AddToGroupVersion(scheme, schema.GroupVersion{Version: "v1"})
-	k8sfake.AddToScheme(scheme)
+	_ = k8sfake.AddToScheme(scheme)
 
 	o := &FakeObjectTracker{
 		FakeWatcher: watch.NewFake(),
@@ -520,7 +538,7 @@ func NewCoreClientSet(objects ...runtime.Object) (*Clientset, *FakeObjectTracker
 	cs := &Clientset{Clientset: &k8sfake.Clientset{}}
 	cs.FakeDiscovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.Fake.AddReactor("*", "*", k8stesting.ObjectReaction(o))
-	cs.Fake.AddWatchReactor("*", o.watchReactionfunc)
+	cs.Fake.AddWatchReactor("*", o.watchReactionFunc)
 
 	return cs, o
 }
@@ -580,7 +598,7 @@ type FakeEvictions struct {
 // Evict overrides the fakepolicyv1beta1.FakeEvictions to override the
 // Policy implementation. This is because the default Policy fake implementation
 // does not propagate the eviction name.
-func (c *FakeEvictions) Evict(ctx context.Context, eviction *apipolicyv1beta1.Eviction) error {
+func (c *FakeEvictions) Evict(_ context.Context, eviction *apipolicyv1beta1.Eviction) error {
 	action := k8stesting.GetActionImpl{}
 	action.Name = eviction.Name
 	action.Verb = "post"

@@ -279,10 +279,10 @@ func TestDeleteNodes(t *testing.T) {
 			waitForCacheSync(t, stop, hasSyncedCacheFns)
 
 			if entry.setup.targetCoreFakeResourceActions != nil {
-				g.Expect(trackers.TargetCore.SetFailAtFakeResourceActions(entry.setup.targetCoreFakeResourceActions)).To(BeNil())
+				trackers.TargetCore.SetFailAtFakeResourceActions(entry.setup.targetCoreFakeResourceActions)
 			}
 			if entry.setup.controlMachineFakeResourceActions != nil {
-				g.Expect(trackers.ControlMachine.SetFailAtFakeResourceActions(entry.setup.controlMachineFakeResourceActions)).To(BeNil())
+				trackers.ControlMachine.SetFailAtFakeResourceActions(entry.setup.controlMachineFakeResourceActions)
 			}
 
 			md, err := buildMachineDeploymentFromSpec(entry.setup.nodeGroups[0], m)
@@ -392,10 +392,10 @@ func TestRefresh(t *testing.T) {
 			waitForCacheSync(t, stop, hasSyncedCacheFns)
 
 			if entry.setup.targetCoreFakeResourceActions != nil {
-				g.Expect(trackers.TargetCore.SetFailAtFakeResourceActions(entry.setup.targetCoreFakeResourceActions)).To(BeNil())
+				trackers.TargetCore.SetFailAtFakeResourceActions(entry.setup.targetCoreFakeResourceActions)
 			}
 			if entry.setup.controlMachineFakeResourceActions != nil {
-				g.Expect(trackers.ControlMachine.SetFailAtFakeResourceActions(entry.setup.controlMachineFakeResourceActions)).To(BeNil())
+				trackers.ControlMachine.SetFailAtFakeResourceActions(entry.setup.controlMachineFakeResourceActions)
 			}
 			mcmCloudProvider, err := BuildMcmCloudProvider(m, nil)
 			g.Expect(err).To(BeNil())
