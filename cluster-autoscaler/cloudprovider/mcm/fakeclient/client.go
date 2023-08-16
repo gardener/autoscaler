@@ -90,29 +90,8 @@ func (t *FakeObjectTracker) Get(gvr schema.GroupVersionResource, ns, name string
 	return t.delegatee.Get(gvr, ns, name)
 }
 
-// Create receives a create event with the object
+// Create receives a create event with the object. Not needed for CA.
 func (t *FakeObjectTracker) Create(gvr schema.GroupVersionResource, obj runtime.Object, ns string) error {
-	if t.fakingOptions.failAll != nil {
-		err := t.fakingOptions.failAll.RunFakeInvocations()
-		if err != nil {
-			return err
-		}
-	}
-
-	err := t.delegatee.Create(gvr, obj, ns)
-	if err != nil {
-		return err
-	}
-
-	if t.FakeWatcher == nil {
-		return errors.New("error sending event on a tracker with no watch support")
-	}
-
-	if t.IsStopped() {
-		return errors.New("error sending event on a stopped tracker")
-	}
-
-	t.FakeWatcher.Add(obj)
 	return nil
 }
 
@@ -165,34 +144,8 @@ func (t *FakeObjectTracker) List(gvr schema.GroupVersionResource, gvk schema.Gro
 	return t.delegatee.List(gvr, gvk, ns)
 }
 
-// Delete receives an delete event with the object
+// Delete receives an delete event with the object. Not needed for CA.
 func (t *FakeObjectTracker) Delete(gvr schema.GroupVersionResource, ns, name string) error {
-	if t.fakingOptions.failAll != nil {
-		err := t.fakingOptions.failAll.RunFakeInvocations()
-		if err != nil {
-			return err
-		}
-	}
-
-	obj, errGet := t.delegatee.Get(gvr, ns, name)
-	err := t.delegatee.Delete(gvr, ns, name)
-	if err != nil {
-		return err
-	}
-
-	if errGet != nil {
-		return errGet
-	}
-
-	if t.FakeWatcher == nil {
-		return errors.New("error sending event on a tracker with no watch support")
-	}
-
-	if t.IsStopped() {
-		return errors.New("error sending event on a stopped tracker")
-	}
-
-	t.FakeWatcher.Delete(obj)
 	return nil
 }
 
@@ -462,7 +415,7 @@ func NewMachineClientSet(objects ...runtime.Object) (*fakeuntyped.Clientset, *Fa
 
 // FakeObjectTrackers is a struct containing all the controller fake object trackers
 type FakeObjectTrackers struct {
-	ControlMachine, ControlCore, TargetCore *FakeObjectTracker
+	ControlMachine, TargetCore *FakeObjectTracker
 }
 
 // NewFakeObjectTrackers initializes fakeObjectTrackers initializes the fake object trackers
@@ -485,15 +438,6 @@ func (o *FakeObjectTrackers) Start() {
 		}
 	}()
 
-	// this check is for the CA case where ControlCore is nil
-	if o.ControlCore != nil {
-		go func() {
-			err := o.ControlCore.Start()
-			if err != nil {
-				klog.Errorf("failed to start control core object tracker, Err: %v", err)
-			}
-		}()
-	}
 	go func() {
 		err := o.TargetCore.Start()
 		if err != nil {
@@ -505,10 +449,6 @@ func (o *FakeObjectTrackers) Start() {
 // Stop stops all object trackers
 func (o *FakeObjectTrackers) Stop() {
 	o.ControlMachine.Stop()
-	// this check is for the CA case where ControlCore is nil
-	if o.ControlCore != nil {
-		go o.ControlCore.Stop()
-	}
 	o.TargetCore.Stop()
 }
 

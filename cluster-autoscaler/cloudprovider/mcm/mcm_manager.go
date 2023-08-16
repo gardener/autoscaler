@@ -67,6 +67,8 @@ import (
 const (
 	defaultMaxRetryTimeout = 1 * time.Minute
 	defaultRetryInterval   = 5 * time.Second
+	// defaultResetAnnotationTimeout is the timeout for resetting the priority annotation of a machine
+	defaultResetAnnotationTimeout = 10 * time.Second
 	// defaultPriorityValue is the default value for the priority annotation used by CA. It is set to 3 because MCM defaults the priority of machine it creates to 3.
 	defaultPriorityValue   = "3"
 	minResyncPeriodDefault = 1 * time.Hour
@@ -465,22 +467,27 @@ func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error
 		return fmt.Errorf("unable to list all machines for node group %s, Error: %v", mdName, err)
 	}
 	for _, machine := range allMachinesForMachineDeployment {
-		val, ok := machine.Annotations[machinePriorityAnnotation]
-		if ok && val != defaultPriorityValue {
-			if err := m.retry(func(ctx context.Context) (bool, error) {
+		ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(defaultResetAnnotationTimeout))
+		err := func() error {
+			defer cancelFn()
+			val, ok := machine.Annotations[machinePriorityAnnotation]
+			if ok && val != defaultPriorityValue {
 				nodeName := machine.Labels[v1alpha1.NodeLabelKey]
 				node, err := m.nodeLister.Get(nodeName)
 				if err != nil && !kube_errors.IsNotFound(err) {
-					return true, fmt.Errorf("unable to get Node object %s for machine %s, Error: %v", nodeName, machine.Name, err)
+					return fmt.Errorf("unable to get Node object %s for machine %s, Error: %v", nodeName, machine.Name, err)
 				} else if err == nil && taints.HasToBeDeletedTaint(node) {
 					// Don't update priority annotation if the taint is present on the node
-					return false, nil
+					return nil
 				}
-				return m.updateAnnotationOnMachine(ctx, machine.Name, machinePriorityAnnotation, defaultPriorityValue)
-			}, "Machine", "update", machine.Name); err != nil {
-				klog.Errorf("could not reset priority annotation on machine %s, Error: %v", machine.Name, err)
+				_, err = m.updateAnnotationOnMachine(ctx, machine.Name, machinePriorityAnnotation, defaultPriorityValue)
 				return err
 			}
+			return nil
+		}()
+		if err != nil {
+			klog.Errorf("could not reset priority annotation on machine %s, Error: %v", machine.Name, err)
+			return err
 		}
 	}
 	return nil
