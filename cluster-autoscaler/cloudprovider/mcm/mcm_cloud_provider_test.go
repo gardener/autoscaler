@@ -18,6 +18,7 @@ package mcm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/gomega"
@@ -375,7 +376,7 @@ func TestRefresh(t *testing.T) {
 			},
 			expect{
 				machines: []*v1alpha1.Machine{newMachine("machine-1", "fakeID", nil, "machinedeployment-1", "machineset-1", "1", false)},
-				err:      fmt.Errorf(mcUpdateErrorMsg),
+				err:      errors.Join(fmt.Errorf("could not reset priority annotation on machine machine-1, Error: %v", mcUpdateErrorMsg)),
 			},
 		},
 	}

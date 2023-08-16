@@ -24,6 +24,7 @@ package mcm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/taints"
@@ -466,6 +467,7 @@ func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error
 	if err != nil {
 		return fmt.Errorf("unable to list all machines for node group %s, Error: %v", mdName, err)
 	}
+	var collectiveError error
 	for _, machine := range allMachinesForMachineDeployment {
 		ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(defaultResetAnnotationTimeout))
 		err := func() error {
@@ -486,11 +488,11 @@ func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error
 			return nil
 		}()
 		if err != nil {
-			klog.Errorf("could not reset priority annotation on machine %s, Error: %v", machine.Name, err)
-			return err
+			collectiveError = errors.Join(collectiveError, fmt.Errorf("could not reset priority annotation on machine %s, Error: %v", machine.Name, err))
+			continue
 		}
 	}
-	return nil
+	return collectiveError
 }
 
 // prioritizeMachinesForDeletion prioritizes the targeted machines by updating their priority annotation to 1
