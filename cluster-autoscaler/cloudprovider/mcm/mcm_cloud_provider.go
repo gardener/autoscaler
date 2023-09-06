@@ -237,7 +237,7 @@ func ReferenceFromProviderID(m *McmManager, id string) (*Ref, error) {
 	for _, machine := range machines {
 		machineID := strings.Split(machine.Spec.ProviderID, "/")
 		nodeID := strings.Split(id, "/")
-		// If registered, the ID will match the AWS instance ID.
+		// If registered, the ID will match the cloudprovider instance ID.
 		// If unregistered, the ID will match the machine name.
 		if machineID[len(machineID)-1] == nodeID[len(nodeID)-1] ||
 			nodeID[len(nodeID)-1] == machine.Name {
@@ -409,17 +409,11 @@ func (machinedeployment *MachineDeployment) Debug() string {
 
 // Nodes returns a list of all nodes that belong to this node group.
 func (machinedeployment *MachineDeployment) Nodes() ([]cloudprovider.Instance, error) {
-	nodeProviderIDs, err := machinedeployment.mcmManager.GetMachineDeploymentNodes(machinedeployment)
+	instances, err := machinedeployment.mcmManager.GetMachineDeploymentInstances(machinedeployment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get the nodes backed by the machinedeployment %q, error: %v", machinedeployment.Name, err)
+		return nil, fmt.Errorf("failed to get the cloudprovider.Instance for machines backed by the machinedeployment %q, error: %v", machinedeployment.Name, err)
 	}
 
-	instances := make([]cloudprovider.Instance, len(nodeProviderIDs))
-	for i := range nodeProviderIDs {
-		instances[i] = cloudprovider.Instance{
-			Id: nodeProviderIDs[i],
-		}
-	}
 	return instances, nil
 }
 

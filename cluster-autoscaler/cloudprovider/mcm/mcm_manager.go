@@ -27,7 +27,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/taints"
 	"math/rand"
 	"net/http"
 	"os"
@@ -41,6 +40,8 @@ import (
 	machineapi "github.com/gardener/machine-controller-manager/pkg/client/clientset/versioned/typed/machine/v1alpha1"
 	machineinformers "github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions"
 	machinelisters "github.com/gardener/machine-controller-manager/pkg/client/listers/machine/v1alpha1"
+	machinecodes "github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
+	machinestatus "github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -55,6 +56,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/config/dynamic"
 	"k8s.io/autoscaler/cluster-autoscaler/processors/nodegroupset"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
+	"k8s.io/autoscaler/cluster-autoscaler/utils/taints"
 	"k8s.io/client-go/discovery"
 	coreinformers "k8s.io/client-go/informers"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -602,43 +604,87 @@ func (m *McmManager) retry(fn func(ctx context.Context) (bool, error), resourceT
 	}
 }
 
-// GetMachineDeploymentNodes returns the set of Nodes which belongs to the MachineDeployment.
-func (m *McmManager) GetMachineDeploymentNodes(machinedeployment *MachineDeployment) ([]string, error) {
-	md, err := m.machineDeploymentLister.MachineDeployments(m.namespace).Get(machinedeployment.Name)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch MachineDeployment object %s, Error: %v", machinedeployment.Name, err)
-	}
+// GetMachineDeploymentInstances returns list of cloudprovider.Instance for machines which belongs to the MachineDeployment.
+func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDeployment) ([]cloudprovider.Instance, error) {
+	var (
+		list     = []string{machinedeployment.Name}
+		selector = labels.NewSelector()
+		req, _   = labels.NewRequirement("name", selection.Equals, list)
+	)
 
-	machineList, err := m.machineLister.Machines(m.namespace).List(labels.Everything())
+	selector = selector.Add(*req)
+	machineList, err := m.machineLister.Machines(m.namespace).List(selector)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch list of Machine objects %v", err)
+		return nil, fmt.Errorf("unable to fetch list of Machine objects %v for machinedeployment %q", err, machinedeployment.Name)
 	}
 
 	nodeList, err := m.nodeLister.List(labels.Everything())
 	if err != nil {
-		return nil, fmt.Errorf("Unable to fetch list of Nodes %v", err)
+		return nil, fmt.Errorf("unable to fetch list of Nodes %v", err)
 	}
 
-	var nodes []string
+	// (mobj, mobjPid, nodeobj) -> instance(nodeobj.pid,_)
+	// (mobj, mobjPid, _) -> instance("requested://",status{'creating'})
+	// (mobj, _) -> instance("requested://",status{'creating',{}})
+	// (mobj, _) with quota error -> instance("requested://",status{'creating',{'outofResourcesClass','ResourceExhausted','[ResourceExhausted] [the following errors:  ]'}})
+
+	// {
+	// 	lastOperation: {
+	// 		operationType: Creating
+	// 		operationState: Failed
+	// 		operationError: ResourceExhausted
+	// 		description: "Cloud provider message - machine codes error: code = [Internal] message = [Create machine "shoot--ddci--cbc-sys-tests03-pool-c32m256-3b-z1-575b9-hlvj6" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]."
+	// 	}
+	// }
+	var instances []cloudprovider.Instance
 	// Bearing O(n2) complexity, assuming we will not have lot of nodes/machines, open for optimisations.
 	for _, machine := range machineList {
-		if strings.Contains(machine.Name, md.Name) {
-			var found bool
-			for _, node := range nodeList {
-				if machine.Labels["node"] == node.Name {
-					nodes = append(nodes, node.Spec.ProviderID)
-					found = true
-					break
+		instance := cloudprovider.Instance{}
+		var found bool
+		for _, node := range nodeList {
+			if machine.Labels["node"] == node.Name {
+				// ensures cloudprovider.Instance is formed only for VM registered as a node
+				instance.Id = node.Spec.ProviderID
+				instance.Status = &cloudprovider.InstanceStatus{
+					State: cloudprovider.InstanceRunning,
 				}
-			}
-			if !found {
-				// No node found - either the machine has not registered yet or AWS is unable to fulfill the request.
-				// Report a special ID so that the autoscaler can track it as an unregistered node.
-				nodes = append(nodes, fmt.Sprintf("requested://%s", machine.Name))
+				found = true
+				break
 			}
 		}
+		if !found {
+			// No k8s node found - either the VM has not registered yet or MCM is unable to fulfill the request.
+			// Report a special ID so that the autoscaler can track it as an unregistered node.
+			instance.Id = fmt.Sprintf("requested://%s", machine.Name)
+			instance.Status = &cloudprovider.InstanceStatus{
+				State:     cloudprovider.InstanceCreating,
+				ErrorInfo: getErrorInfo(machine),
+			}
+		}
+		instances = append(instances, instance)
 	}
-	return nodes, nil
+	return instances, nil
+}
+
+// getErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
+func getErrorInfo(machine *v1alpha1.Machine) *cloudprovider.InstanceErrorInfo {
+	if machine.Status.LastOperation.Type == v1alpha1.MachineOperationCreate && machine.Status.LastOperation.State == v1alpha1.MachineStateFailed && machine.Status.LastOperation.ErrorCode == machinecodes.ResourceExhausted.String() {
+		return &cloudprovider.InstanceErrorInfo{
+			ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
+			ErrorCode:    machinecodes.ResourceExhausted.String(),
+			ErrorMessage: getMachineStatusErrorMessage(machine),
+		}
+	}
+	return nil
+}
+
+func getMachineStatusErrorMessage(machine *v1alpha1.Machine) string {
+	desc := machine.Status.LastOperation.Description
+	decoded, err := machinestatus.FindCodeAndMessage(desc)
+	if err != nil {
+		return desc
+	}
+	return decoded[1]
 }
 
 // validateNodeTemplate function validates the NodeTemplate object of the MachineClass
