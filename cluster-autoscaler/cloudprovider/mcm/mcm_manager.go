@@ -623,19 +623,6 @@ func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDep
 		return nil, fmt.Errorf("unable to fetch list of Nodes %v", err)
 	}
 
-	// (mobj, mobjPid, nodeobj) -> instance(nodeobj.pid,_)
-	// (mobj, mobjPid, _) -> instance("requested://",status{'creating'})
-	// (mobj, _) -> instance("requested://",status{'creating',{}})
-	// (mobj, _) with quota error -> instance("requested://",status{'creating',{'outofResourcesClass','ResourceExhausted','[ResourceExhausted] [the following errors:  ]'}})
-
-	// {
-	// 	lastOperation: {
-	// 		operationType: Creating
-	// 		operationState: Failed
-	// 		operationError: ResourceExhausted
-	// 		description: "Cloud provider message - machine codes error: code = [Internal] message = [Create machine "shoot--ddci--cbc-sys-tests03-pool-c32m256-3b-z1-575b9-hlvj6" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]."
-	// 	}
-	// }
 	var instances []cloudprovider.Instance
 	// Bearing O(n2) complexity, assuming we will not have lot of nodes/machines, open for optimisations.
 	for _, machine := range machineList {
@@ -643,19 +630,17 @@ func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDep
 		var found bool
 		for _, node := range nodeList {
 			if machine.Labels["node"] == node.Name {
-				// ensures cloudprovider.Instance is formed only for VM registered as a node
+				// to ensure machine obj with VM but without node obj are marked as `Creating` cloudprovider.Instance
+				// NOTE: machine obj with a `notReady` node is not marked `Creating`
 				instance.Id = node.Spec.ProviderID
-				instance.Status = &cloudprovider.InstanceStatus{
-					State: cloudprovider.InstanceRunning,
-				}
 				found = true
 				break
 			}
 		}
 		if !found {
 			// No k8s node found - either the VM has not registered yet or MCM is unable to fulfill the request.
-			// Report a special ID so that the autoscaler can track it as an unregistered node.
-			instance.Id = fmt.Sprintf("requested://%s", machine.Name)
+			// Report a special placeholder ID so that the autoscaler can track it as an unregistered node.
+			instance.Id = placeholderInstanceIDForMachineObj(machine.Name)
 			instance.Status = &cloudprovider.InstanceStatus{
 				State:     cloudprovider.InstanceCreating,
 				ErrorInfo: getErrorInfo(machine),
@@ -664,6 +649,10 @@ func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDep
 		instances = append(instances, instance)
 	}
 	return instances, nil
+}
+
+func placeholderInstanceIDForMachineObj(name string) string{
+	return fmt.Sprintf("requested://%s",name)
 }
 
 // getErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
