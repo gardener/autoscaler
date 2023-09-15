@@ -651,8 +651,8 @@ func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDep
 	return instances, nil
 }
 
-func placeholderInstanceIDForMachineObj(name string) string{
-	return fmt.Sprintf("requested://%s",name)
+func placeholderInstanceIDForMachineObj(name string) string {
+	return fmt.Sprintf("requested://%s", name)
 }
 
 // getErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
