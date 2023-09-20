@@ -421,7 +421,7 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) caerrors.AutoscalerErr
 		return nil
 	}
 
-	// FORK-CHANGE: Removed `skipping of iteration on failure to remove createErrorNodes`, to allow for scale-up. 
+	// FORK-CHANGE: Removed `skipping of iteration on failure to remove createErrorNodes`, to allow for scale-up.
 	// Reason: Failure will always be there when machineDeployment is under rolling update as per MCM cloudprovider implementation, but scale-up should still be allowed.
 	danglingNodes, err := a.deleteCreatedNodesWithErrors()
 	if err != nil {
@@ -623,7 +623,8 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) caerrors.AutoscalerErr
 			a.lastScaleDownFailTime.Add(a.ScaleDownDelayAfterFailure).After(currentTime) ||
 			a.lastScaleDownDeleteTime.Add(a.ScaleDownDelayAfterDelete).After(currentTime)
 
-		klog.V(4).Infof("Scale down status: lastScaleUpTime=%s lastScaleDownDeleteTime=%v "+
+		// FORK-CHANGE: Updated log V(4) -> V(2). This helps in debugging
+		klog.V(2).Infof("Scale down status: lastScaleUpTime=%s lastScaleDownDeleteTime=%v "+
 			"lastScaleDownFailTime=%s scaleDownForbidden=%v scaleDownInCooldown=%v",
 			a.lastScaleUpTime, a.lastScaleDownDeleteTime, a.lastScaleDownFailTime,
 			a.processorCallbacks.disableScaleDownForLoop, scaleDownInCooldown)
