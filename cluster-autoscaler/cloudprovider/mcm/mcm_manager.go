@@ -41,7 +41,6 @@ import (
 	machineinformers "github.com/gardener/machine-controller-manager/pkg/client/informers/externalversions"
 	machinelisters "github.com/gardener/machine-controller-manager/pkg/client/listers/machine/v1alpha1"
 	machinecodes "github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
-	machinestatus "github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/status"
 	apiv1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	kube_errors "k8s.io/apimachinery/pkg/api/errors"
@@ -669,11 +668,46 @@ func getErrorInfo(machine *v1alpha1.Machine) *cloudprovider.InstanceErrorInfo {
 
 func getMachineStatusErrorMessage(machine *v1alpha1.Machine) string {
 	desc := machine.Status.LastOperation.Description
-	decoded, err := machinestatus.FindCodeAndMessage(desc)
+	decoded, err := findCodeAndMessage(desc)
 	if err != nil {
 		return desc
 	}
 	return decoded[1]
+}
+
+// findCodeAndMessage is duplicate of https://github.com/gardener/machine-controller-manager/blob/d0fdc315087158d41f31d0c4bbbb25af9845eb0f/pkg/util/provider/machinecodes/status/status.go#L120C1-L120C1
+// TODO(himanshu-kun): update this one the function at above location is exported
+func findCodeAndMessage(encodedMsg string) ([]string, error) {
+	var decoded []string
+	var temp []rune
+	counter := 0
+
+	for _, char := range encodedMsg {
+		switch char {
+		case '[':
+			counter++
+			temp = append(temp, char)
+		case ']':
+			if counter > 0 {
+				counter--
+				temp = append(temp, char)
+				if counter == 0 {
+					tempString := string(temp)
+					decoded = append(decoded, tempString[1:len(tempString)-1])
+					temp = nil
+				}
+			}
+		default:
+			if counter > 0 {
+				temp = append(temp, char)
+			}
+		}
+	}
+
+	if len(decoded) != 2 {
+		return nil, fmt.Errorf("unable to decode for machine code error")
+	}
+	return decoded, nil
 }
 
 // validateNodeTemplate function validates the NodeTemplate object of the MachineClass
