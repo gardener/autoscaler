@@ -676,7 +676,7 @@ func getMachineStatusErrorMessage(machine *v1alpha1.Machine) string {
 }
 
 // findCodeAndMessage is duplicate of https://github.com/gardener/machine-controller-manager/blob/d0fdc315087158d41f31d0c4bbbb25af9845eb0f/pkg/util/provider/machinecodes/status/status.go#L120C1-L120C1
-// TODO(himanshu-kun): update this one the function at above location is exported
+// TODO(himanshu-kun): update this once the function at aforementioned location is exported
 func findCodeAndMessage(encodedMsg string) ([]string, error) {
 	var decoded []string
 	var temp []rune

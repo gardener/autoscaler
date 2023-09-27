@@ -67,8 +67,11 @@ this document:
   * [How can I update CA dependencies (particularly k8s.io/kubernetes)?](#how-can-i-update-ca-dependencies-particularly-k8siokubernetes)
 
 * [In the context of Gardener](#in-the-context-of-gardener)
-  * [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
-  * [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
+  * [For User](#for-user)
+    * [When does autoscaler backs off early from a node group?](#when-does-autoscaler-backs-off-early-from-a-node-group)
+  * [For Developer](#for-developer)
+    * [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
+    * [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
 <!--- TOC END -->
 
 # Basics
@@ -1087,6 +1090,36 @@ Caveats:
 
 # In the context of Gardener:
 
+## For User
+### When does autoscaler backs off early from a node group?
+
+Autoscaler backs off from a node group if the scale-up requested doesn't succeed. Autoscaler decides to backoff based on:
+- Timeout
+  - if the node doesn't join in `max-node-provision-time`
+- `ResourceExhausted` error 
+  - if the node doesn't join due to error from cloud provider side, and the error is classified as `ResourceExhausted`
+- Scale up operation fails for a node group
+
+Early backoff , as the name suggests doesn't wait till `timeout` , but backsoff as soon as certain condition is satisfied. This helps in trying other node groups quickly.
+
+Currently early-backoff is enabled only for `ResourceExhausted` errors. Errors classified as `ResourceExhausted` are(and not limited to):
+- `out of quota` errors where customer quota is exhausted, and the quota is configurable per zone (not per region). Generally quotas for VMs, cpus, gpus and disks are configurable per zone, but please confirm the same for your cloud provider
+- `out of stock` errors where cloud-provider doesn't have enough resources in the particular zone, but the resource is available in other zones
+- `not-supported` errors where the instance type or disk type is not supported in the particular zone. 
+
+Errors not classified as `ResourceExhausted` are:(and not limited to):
+- `invalid credentials`
+- `rate limiting`
+- `policy constraints defined by customer`
+- `service-unavailable` on cloud-provider side
+
+Backoff after `timeout` will happen for these errors.
+
+*NOTE:* The identifier for the error might differ for each cloud-provider. The above listed errors are general names used.
+
+Refer issue https://github.com/gardener/autoscaler/issues/154 to track changes made for early-backoff enablement
+
+## For Developer 
 ### How do I sync gardener autoscaler with an upstream autoscaler minor release?
 
 This is helpful in order to offer Gardener CA with latest or recent K8s version. Note that this may also demand a need to upgrade K8s version used by Machine Controller Manager.
