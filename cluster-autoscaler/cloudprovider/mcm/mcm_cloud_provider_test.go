@@ -420,13 +420,15 @@ func TestRefresh(t *testing.T) {
 	}
 }
 
-// (mobj, mobjPid, nodeobj)   				-> instance(nodeobj.pid,_)
-// (mobj, mobjPid, _)         				-> instance("requested://",status{'creating'})
-// (mobj, _)                 				-> instance("requested://",status{'creating'})
-// (mobj, _) with quota error 				-> instance("requested://",status{'creating',{'outofResourcesClass','ResourceExhausted','[ResourceExhausted] [the following errors:  ]'}})
-// (mobj, _) with invalid credentials error -> instance("requested://",status{'creating'})
+// Different kinds of cases possible and expected cloudprovider.Instance returned for them
+// (mobj, mobjPid, nodeobj)   				    -> instance(nodeobj.pid,_)
+// (mobj, mobjPid, _)         				    -> instance("requested://<machine-name>",status{'creating'})
+// (mobj, _,_)                 				    -> instance("requested://<machine-name>",status{'creating'})
+// (mobj, _,_) with quota error 				-> instance("requested://<machine-name>",status{'creating',{'outofResourcesClass','ResourceExhausted','<message>'}})
+// (mobj, _,_) with invalid credentials error   -> instance("requested://<machine-name>",status{'creating'})
 
-//	{
+// Example machine.status.lastOperation for a `ResourceExhausted` error
+//
 //		lastOperation: {
 //			type: Creating
 //			state: Failed
@@ -441,11 +443,11 @@ func TestNodes(t *testing.T) {
 		invalid_credentials_machine_status_error_description = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
 	)
 	type expectationPerInstance struct {
-		expectedProviderID           string
-		expectedInstanceState        cloudprovider.InstanceState
-		expectedInstanceErrorClass   cloudprovider.InstanceErrorClass
-		expectedInstanceErrorCode    string
-		expectedInstanceErrorMessage string
+		providerID           string
+		instanceState        cloudprovider.InstanceState
+		instanceErrorClass   cloudprovider.InstanceErrorClass
+		instanceErrorCode    string
+		instanceErrorMessage string
 	}
 	type expect struct {
 		expectationPerInstanceList []expectationPerInstance
@@ -515,20 +517,20 @@ func TestNodes(t *testing.T) {
 				found := false
 				for _, gotInstance := range returnedInstances {
 					g.Expect(gotInstance.Id).ToNot(BeEmpty())
-					if expectedInstance.expectedProviderID == gotInstance.Id {
+					if expectedInstance.providerID == gotInstance.Id {
 						if !strings.Contains(gotInstance.Id, "requested://") {
 							// must be a machine obj whose node is registered (ready or notReady)
 							g.Expect(gotInstance.Status).To(BeNil())
 						} else {
-							if int(expectedInstance.expectedInstanceState) != -1 {
+							if int(expectedInstance.instanceState) != -1 {
 								g.Expect(gotInstance.Status).ToNot(BeNil())
-								g.Expect(gotInstance.Status.State).To(Equal(expectedInstance.expectedInstanceState))
+								g.Expect(gotInstance.Status.State).To(Equal(expectedInstance.instanceState))
 							}
-							if int(expectedInstance.expectedInstanceErrorClass) != -1 || expectedInstance.expectedInstanceErrorCode != "" || expectedInstance.expectedInstanceErrorMessage != "" {
+							if int(expectedInstance.instanceErrorClass) != -1 || expectedInstance.instanceErrorCode != "" || expectedInstance.instanceErrorMessage != "" {
 								g.Expect(gotInstance.Status.ErrorInfo).ToNot(BeNil())
-								g.Expect(gotInstance.Status.ErrorInfo.ErrorClass).To(Equal(expectedInstance.expectedInstanceErrorClass))
-								g.Expect(gotInstance.Status.ErrorInfo.ErrorCode).To(Equal(expectedInstance.expectedInstanceErrorCode))
-								g.Expect(gotInstance.Status.ErrorInfo.ErrorMessage).To(Equal(expectedInstance.expectedInstanceErrorMessage))
+								g.Expect(gotInstance.Status.ErrorInfo.ErrorClass).To(Equal(expectedInstance.instanceErrorClass))
+								g.Expect(gotInstance.Status.ErrorInfo.ErrorCode).To(Equal(expectedInstance.instanceErrorCode))
+								g.Expect(gotInstance.Status.ErrorInfo.ErrorMessage).To(Equal(expectedInstance.instanceErrorMessage))
 							}
 						}
 						found = true

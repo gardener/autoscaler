@@ -603,8 +603,8 @@ func (m *McmManager) retry(fn func(ctx context.Context) (bool, error), resourceT
 	}
 }
 
-// GetMachineDeploymentInstances returns list of cloudprovider.Instance for machines which belongs to the MachineDeployment.
-func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDeployment) ([]cloudprovider.Instance, error) {
+// GetInstancesForMachineDeployment returns list of cloudprovider.Instance for machines which belongs to the MachineDeployment.
+func (m *McmManager) GetInstancesForMachineDeployment(machinedeployment *MachineDeployment) ([]cloudprovider.Instance, error) {
 	var (
 		list     = []string{machinedeployment.Name}
 		selector = labels.NewSelector()
@@ -629,20 +629,18 @@ func (m *McmManager) GetMachineDeploymentInstances(machinedeployment *MachineDep
 		var found bool
 		for _, node := range nodeList {
 			if machine.Labels["node"] == node.Name {
-				// to ensure machine obj with VM but without node obj are marked as `Creating` cloudprovider.Instance
-				// NOTE: machine obj with a `notReady` node is not marked `Creating`
 				instance.Id = node.Spec.ProviderID
 				found = true
 				break
 			}
 		}
 		if !found {
-			// No k8s node found - either the VM has not registered yet or MCM is unable to fulfill the request.
+			// No k8s node found - either the VM is up but has not registered yet or registered but node is NotReady or MCM is unable to fulfill the request to create VM.
 			// Report a special placeholder ID so that the autoscaler can track it as an unregistered node.
 			instance.Id = placeholderInstanceIDForMachineObj(machine.Name)
 			instance.Status = &cloudprovider.InstanceStatus{
 				State:     cloudprovider.InstanceCreating,
-				ErrorInfo: getErrorInfo(machine),
+				ErrorInfo: getCreateErrorInfo(machine),
 			}
 		}
 		instances = append(instances, instance)
@@ -654,8 +652,8 @@ func placeholderInstanceIDForMachineObj(name string) string {
 	return fmt.Sprintf("requested://%s", name)
 }
 
-// getErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
-func getErrorInfo(machine *v1alpha1.Machine) *cloudprovider.InstanceErrorInfo {
+// getCreateErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
+func getCreateErrorInfo(machine *v1alpha1.Machine) *cloudprovider.InstanceErrorInfo {
 	if machine.Status.LastOperation.Type == v1alpha1.MachineOperationCreate && machine.Status.LastOperation.State == v1alpha1.MachineStateFailed && machine.Status.LastOperation.ErrorCode == machinecodes.ResourceExhausted.String() {
 		return &cloudprovider.InstanceErrorInfo{
 			ErrorClass:   cloudprovider.OutOfResourcesErrorClass,

@@ -24,13 +24,14 @@ package mcm
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	schedulerframework "k8s.io/kubernetes/pkg/scheduler/framework"
-	"strings"
 
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
@@ -409,7 +410,7 @@ func (machinedeployment *MachineDeployment) Debug() string {
 
 // Nodes returns a list of all nodes that belong to this node group.
 func (machinedeployment *MachineDeployment) Nodes() ([]cloudprovider.Instance, error) {
-	instances, err := machinedeployment.mcmManager.GetMachineDeploymentInstances(machinedeployment)
+	instances, err := machinedeployment.mcmManager.GetInstancesForMachineDeployment(machinedeployment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get the cloudprovider.Instance for machines backed by the machinedeployment %q, error: %v", machinedeployment.Name, err)
 	}
