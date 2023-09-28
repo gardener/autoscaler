@@ -421,11 +421,10 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) caerrors.AutoscalerErr
 		return nil
 	}
 
-	// FORK-CHANGE: Removed `skipping of iteration on failure to remove createErrorNodes`, to allow for scale-up.
-	// Reason: Failure will always be there when machineDeployment is under rolling update as per MCM cloudprovider implementation, but scale-up should still be allowed.
 	danglingNodes, err := a.deleteCreatedNodesWithErrors()
 	if err != nil {
-		klog.Warningf("Failed to remove nodes that were created with errors: %v", err)
+		klog.Warningf("Failed to remove nodes that were created with errors, skipping iteration: %v", err)
+		return nil
 	}
 	if danglingNodes {
 		klog.V(0).Infof("Some nodes that failed to create were removed, skipping iteration")
