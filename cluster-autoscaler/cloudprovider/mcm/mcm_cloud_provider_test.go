@@ -438,7 +438,7 @@ func TestRefresh(t *testing.T) {
 //	}
 func TestNodes(t *testing.T) {
 	const (
-		outOfQuotaMachineStatusErrorDescription        = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
+		outOfQuotaMachineStatusErrorDescription         = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
 		outOfQuotaInstanceErrorMessage                  = "Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]"
 		invalidCredentialsMachineStatusErrorDescription = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
 	)
