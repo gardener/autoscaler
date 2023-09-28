@@ -40,7 +40,7 @@ excluded_packages=(
   'cluster-autoscaler/cloudprovider/hetzner/hcloud-go'
   'cluster-autoscaler/expander/grpcplugin/protos'
   'cluster-autoscaler/cloudprovider/tencentcloud/tencentcloud-sdk-go'
-  '/balancer/' # FORK-CHANGE: since we don't use `balancer` component , no need to do any golint checks and block our PR tests
+  'balancer/' # FORK-CHANGE: since we don't use `balancer` component , no need to do any golint checks and block our PR tests
 )
 
 FIND_PACKAGES='go list ./... '
