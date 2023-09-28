@@ -68,7 +68,7 @@ this document:
 
 * [In the context of Gardener](#in-the-context-of-gardener)
   * [For User](#for-user)
-    * [When does autoscaler backs off early from a node group?](#when-does-autoscaler-backs-off-early-from-a-node-group)
+    * [When does autoscaler back off early from a node group?](#when-does-autoscaler-backs-off-early-from-a-node-group)
   * [For Developer](#for-developer)
     * [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
     * [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
@@ -1100,7 +1100,7 @@ Autoscaler backs off from a node group if the scale-up requested doesn't succeed
   - if the node doesn't join due to error from cloud provider side, and the error is classified as `ResourceExhausted`
 - Scale up operation fails for a node group
 
-Early backoff , as the name suggests doesn't wait till `timeout` , but backsoff as soon as certain condition is satisfied. This helps in trying other node groups quickly.
+As the name suggests, early back-off doesn't wait till `timeout` but backs off when a certain condition is satisfied. This helps in trying other node groups quickly.
 
 Currently early-backoff is enabled only for `ResourceExhausted` errors. Errors classified as `ResourceExhausted` are(and not limited to):
 - `out of quota` errors where customer quota is exhausted, and the quota is configurable per zone (not per region). Generally quotas for VMs, cpus, gpus and disks are configurable per zone, but please confirm the same for your cloud provider
@@ -1113,7 +1113,7 @@ Errors not classified as `ResourceExhausted` are:(and not limited to):
 - `policy constraints defined by customer`
 - `service-unavailable` on cloud-provider side
 
-Backoff after `timeout` will happen for these errors.
+Backoff after `timeout` will happen for errors other than `ResourceExhausted`.
 
 *NOTE:* The identifier for the error might differ for each cloud-provider. The above listed errors are general names used.
 

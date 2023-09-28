@@ -428,10 +428,10 @@ func TestRefresh(t *testing.T) {
 
 //	{
 //		lastOperation: {
-//			operationType: Creating
-//			operationState: Failed
-//			operationError: ResourceExhausted
-//			description: "Cloud provider message - machine codes error: code = [Internal] message = [Create machine "shoot--ddci--cbc-sys-tests03-pool-c32m256-3b-z1-575b9-hlvj6" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]."
+//			type: Creating
+//			state: Failed
+//			errorCode: ResourceExhausted
+//			description: "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine "shoot--ddci--cbc-sys-tests03-pool-c32m256-3b-z1-575b9-hlvj6" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]."
 //		}
 //	}
 func TestNodes(t *testing.T) {
