@@ -438,9 +438,9 @@ func TestRefresh(t *testing.T) {
 //	}
 func TestNodes(t *testing.T) {
 	const (
-		out_of_quota_machine_status_error_description        = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
-		out_of_quota_instance_error_message                  = "Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]"
-		invalid_credentials_machine_status_error_description = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
+		outOfQuotaMachineStatusErrorDescription        = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
+		outOfQuotaInstanceErrorMessage                  = "Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]"
+		invalidCredentialsMachineStatusErrorDescription = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
 	)
 	type expectationPerInstance struct {
 		providerID           string
@@ -467,8 +467,8 @@ func TestNodes(t *testing.T) {
 					allMachines = append(allMachines, newMachine("machine-with-registered-node", "fakeID-1", nil, "machinedeployment-1", "", "", false, true))
 					allMachines = append(allMachines, newMachine("machine-with-vm-but-no-node", "fakeID-2", nil, "machinedeployment-1", "", "", false, false))
 					allMachines = append(allMachines, newMachine("machine-with-vm-creating", "", nil, "machinedeployment-1", "", "", false, false))
-					allMachines = append(allMachines, newMachine("machine-with-vm-create-error-out-of-quota", "", &v1alpha1.MachineStatus{LastOperation: v1alpha1.LastOperation{Type: v1alpha1.MachineOperationCreate, State: v1alpha1.MachineStateFailed, ErrorCode: machinecodes.ResourceExhausted.String(), Description: out_of_quota_machine_status_error_description}}, "machinedeployment-1", "", "", false, false))
-					allMachines = append(allMachines, newMachine("machine-with-vm-create-error-invalid-credentials", "", &v1alpha1.MachineStatus{LastOperation: v1alpha1.LastOperation{Type: v1alpha1.MachineOperationCreate, State: v1alpha1.MachineStateFailed, ErrorCode: machinecodes.Internal.String(), Description: invalid_credentials_machine_status_error_description}}, "machinedeployment-1", "", "", false, false))
+					allMachines = append(allMachines, newMachine("machine-with-vm-create-error-out-of-quota", "", &v1alpha1.MachineStatus{LastOperation: v1alpha1.LastOperation{Type: v1alpha1.MachineOperationCreate, State: v1alpha1.MachineStateFailed, ErrorCode: machinecodes.ResourceExhausted.String(), Description: outOfQuotaMachineStatusErrorDescription}}, "machinedeployment-1", "", "", false, false))
+					allMachines = append(allMachines, newMachine("machine-with-vm-create-error-invalid-credentials", "", &v1alpha1.MachineStatus{LastOperation: v1alpha1.LastOperation{Type: v1alpha1.MachineOperationCreate, State: v1alpha1.MachineStateFailed, ErrorCode: machinecodes.Internal.String(), Description: invalidCredentialsMachineStatusErrorDescription}}, "machinedeployment-1", "", "", false, false))
 					return allMachines
 				}(),
 				machineDeployments: newMachineDeployments(1, 2, nil, nil, nil),
@@ -479,7 +479,7 @@ func TestNodes(t *testing.T) {
 					{"fakeID-1", cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-but-no-node"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-creating"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
-					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), out_of_quota_instance_error_message},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), outOfQuotaInstanceErrorMessage},
 					// invalid credentials error is mapped to Internal code as it can't be fixed by trying another zone
 					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
 				},
