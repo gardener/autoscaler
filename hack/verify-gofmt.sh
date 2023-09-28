@@ -23,6 +23,7 @@ set -o pipefail
 KUBE_ROOT=$(dirname "${BASH_SOURCE}")/..
 cd "${KUBE_ROOT}"
 
+#FORK-CHANGE: ignoring `./cluster-autoscaler/cloudprovider/mcm/*` 
 find_files() {
   find . -not \( \
       \( \
@@ -43,6 +44,7 @@ find_files() {
         -o -wholename './cluster-autoscaler/cloudprovider/huaweicloud/huaweicloud-sdk-go-v3/*' \
         -o -wholename './cluster-autoscaler/cloudprovider/ionoscloud/ionos-cloud-sdk-go/*' \
         -o -wholename './cluster-autoscaler/cloudprovider/hetzner/hcloud-go/*' \
+        -o -wholename './cluster-autoscaler/cloudprovider/mcm/*' \ 
       \) -prune \
     \) -name '*.go'
 }
