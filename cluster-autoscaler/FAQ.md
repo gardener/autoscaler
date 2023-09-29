@@ -1117,6 +1117,21 @@ Backoff after `timeout` will happen for errors other than `ResourceExhausted`.
 
 *NOTE:* The identifier for the error might differ for each cloud-provider. The above listed errors are general names used.
 
+**--Caveat during rolling update--**
+
+Case:
+
+- If node-grp `ng-A` is in rolling update, AND
+- If the scale-up happens for `ng-A` due to an unschedulable pod `podA`, or a set of pods, AND
+- if the node(say `node1`) couldn't join due to `ResourceExhausted`
+
+then autoscaler will early backoff and try to remove the node, but the node removal won't succeed as currently CA is not allowed to perform any scale-down/delete node operation for a rolling update node-grp.
+
+In the above scenario, CA won't try to scale-up any other node-grp for `podA` as it still calculates `node1` to be a possible candidate to join(`ResourceExhausted` errors are recoverable errors). 
+Scale up would still work for any other new pods which can't fit on upcoming `node1`
+
+If you are sure that the capacity won't recover soon, then kindly re-create `podA`. This will allow CA to see it as a new pod and allow scale-up.
+
 Refer issue https://github.com/gardener/autoscaler/issues/154 to track changes made for early-backoff enablement
 
 ## For Developer 
