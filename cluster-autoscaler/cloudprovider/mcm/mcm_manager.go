@@ -645,7 +645,7 @@ func findMatchingInstance(nodes []*v1.Node, machine *v1alpha1.Machine) cloudprov
 	// Report instance with a special placeholder ID so that the autoscaler can track it as an unregistered node.
 	// Report InstanceStatus only for `ResourceExhausted` errors
 	return cloudprovider.Instance{
-		Id: placeholderInstanceIDForMachineObj(machine.Name),
+		Id:     placeholderInstanceIDForMachineObj(machine.Name),
 		Status: checkAndGetResourceExhaustedInstanceStatus(machine),
 	}
 }
@@ -662,55 +662,11 @@ func checkAndGetResourceExhaustedInstanceStatus(machine *v1alpha1.Machine) *clou
 			ErrorInfo: &cloudprovider.InstanceErrorInfo{
 				ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
 				ErrorCode:    machinecodes.ResourceExhausted.String(),
-				ErrorMessage: getMachineStatusErrorMessage(machine),
+				ErrorMessage: machine.Status.LastOperation.Description,
 			},
 		}
 	}
 	return nil
-}
-
-func getMachineStatusErrorMessage(machine *v1alpha1.Machine) string {
-	desc := machine.Status.LastOperation.Description
-	decoded, err := findCodeAndMessage(desc)
-	if err != nil {
-		return desc
-	}
-	return decoded[1]
-}
-
-// findCodeAndMessage is duplicate of https://github.com/gardener/machine-controller-manager/blob/d0fdc315087158d41f31d0c4bbbb25af9845eb0f/pkg/util/provider/machinecodes/status/status.go#L120C1-L120C1
-// TODO(himanshu-kun): update this once the function at aforementioned location is exported
-func findCodeAndMessage(encodedMsg string) ([]string, error) {
-	var decoded []string
-	var temp []rune
-	counter := 0
-
-	for _, char := range encodedMsg {
-		switch char {
-		case '[':
-			counter++
-			temp = append(temp, char)
-		case ']':
-			if counter > 0 {
-				counter--
-				temp = append(temp, char)
-				if counter == 0 {
-					tempString := string(temp)
-					decoded = append(decoded, tempString[1:len(tempString)-1])
-					temp = nil
-				}
-			}
-		default:
-			if counter > 0 {
-				temp = append(temp, char)
-			}
-		}
-	}
-
-	if len(decoded) != 2 {
-		return nil, fmt.Errorf("unable to decode for machine code error")
-	}
-	return decoded, nil
 }
 
 // validateNodeTemplate function validates the NodeTemplate object of the MachineClass

@@ -439,7 +439,6 @@ func TestRefresh(t *testing.T) {
 func TestNodes(t *testing.T) {
 	const (
 		outOfQuotaMachineStatusErrorDescription         = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
-		outOfQuotaInstanceErrorMessage                  = "Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]"
 		invalidCredentialsMachineStatusErrorDescription = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
 	)
 	type expectationPerInstance struct {
@@ -479,7 +478,7 @@ func TestNodes(t *testing.T) {
 					{"fakeID-1", cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-but-no-node"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-creating"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
-					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), outOfQuotaInstanceErrorMessage},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), outOfQuotaMachineStatusErrorDescription},
 					// invalid credentials error is mapped to Internal code as it can't be fixed by trying another zone
 					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 				},
