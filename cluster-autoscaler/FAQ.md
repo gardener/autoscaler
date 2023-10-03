@@ -1130,7 +1130,7 @@ then autoscaler will early backoff and try to remove the node, but the node remo
 In the above scenario, CA won't try to scale-up any other node-grp for `podA` as it still calculates `node1` to be a possible candidate to join(`ResourceExhausted` errors are recoverable errors). 
 Scale-up would still work for any new pods that can't fit on upcoming `node1` but can fit on some other node group. 
 
-If you are sure that the capacity won't recover soon, then kindly re-create `podA`. This will allow CA to see it as a new pod and allow scale-up.
+If you are sure that the capacity won't recover soon, then kindly re-create `podA`. This will allow CA to see it as a new pod and allow scale-up in some other node-grp as `ng-A` would be in backoff.
 
 Refer issue https://github.com/gardener/autoscaler/issues/154 to track changes made for early-backoff enablement
 
