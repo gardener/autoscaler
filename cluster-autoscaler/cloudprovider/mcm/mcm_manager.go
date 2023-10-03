@@ -622,43 +622,48 @@ func (m *McmManager) GetInstancesForMachineDeployment(machinedeployment *Machine
 		return nil, fmt.Errorf("unable to fetch list of Nodes %v", err)
 	}
 
-	var instances []cloudprovider.Instance
+	instances := make([]cloudprovider.Instance, 0, len(machineList))
 	// Bearing O(n2) complexity, assuming we will not have lot of nodes/machines, open for optimisations.
 	for _, machine := range machineList {
-		instance := cloudprovider.Instance{}
-		var found bool
-		for _, node := range nodeList {
-			if machine.Labels["node"] == node.Name {
-				instance.Id = node.Spec.ProviderID
-				found = true
-				break
-			}
-		}
-		if !found {
-			// No k8s node found - either the VM is up but has not registered yet or registered but node is NotReady or MCM is unable to fulfill the request to create VM.
-			// Report a special placeholder ID so that the autoscaler can track it as an unregistered node.
-			instance.Id = placeholderInstanceIDForMachineObj(machine.Name)
-			instance.Status = &cloudprovider.InstanceStatus{
-				State:     cloudprovider.InstanceCreating,
-				ErrorInfo: getCreateErrorInfo(machine),
-			}
-		}
+		instance := findMatchingInstance(nodeList, machine)
 		instances = append(instances, instance)
 	}
 	return instances, nil
+}
+
+func findMatchingInstance(nodes []*v1.Node, machine *v1alpha1.Machine) cloudprovider.Instance {
+	for _, node := range nodes {
+		if machine.Labels["node"] == node.Name {
+			return cloudprovider.Instance{Id: node.Spec.ProviderID}
+		}
+	}
+	// No k8s node found , one of the following cases possible
+	//  - MCM is unable to fulfill the request to create VM.
+	//  - VM is being created
+	//	- the VM is up but has not registered yet
+
+	// Report instance with a special placeholder ID so that the autoscaler can track it as an unregistered node.
+	// Report InstanceStatus only for `ResourceExhausted` errors
+	return cloudprovider.Instance{
+		Id: placeholderInstanceIDForMachineObj(machine.Name),
+		Status: checkAndGetResourceExhaustedInstanceStatus(machine),
+	}
 }
 
 func placeholderInstanceIDForMachineObj(name string) string {
 	return fmt.Sprintf("requested://%s", name)
 }
 
-// getCreateErrorInfo returns cloudprovider.InstanceErrorInfo for the machine obj
-func getCreateErrorInfo(machine *v1alpha1.Machine) *cloudprovider.InstanceErrorInfo {
+// checkAndGetResourceExhaustedInstanceStatus returns cloudprovider.InstanceStatus for the machine obj
+func checkAndGetResourceExhaustedInstanceStatus(machine *v1alpha1.Machine) *cloudprovider.InstanceStatus {
 	if machine.Status.LastOperation.Type == v1alpha1.MachineOperationCreate && machine.Status.LastOperation.State == v1alpha1.MachineStateFailed && machine.Status.LastOperation.ErrorCode == machinecodes.ResourceExhausted.String() {
-		return &cloudprovider.InstanceErrorInfo{
-			ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
-			ErrorCode:    machinecodes.ResourceExhausted.String(),
-			ErrorMessage: getMachineStatusErrorMessage(machine),
+		return &cloudprovider.InstanceStatus{
+			State: cloudprovider.InstanceCreating,
+			ErrorInfo: &cloudprovider.InstanceErrorInfo{
+				ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
+				ErrorCode:    machinecodes.ResourceExhausted.String(),
+				ErrorMessage: getMachineStatusErrorMessage(machine),
+			},
 		}
 	}
 	return nil
