@@ -1128,7 +1128,7 @@ Case:
 then autoscaler will early backoff and try to remove the node, but the node removal won't succeed as currently CA is not allowed to perform any scale-down/delete node operation for a rolling update node-grp.
 
 In the above scenario, CA won't try to scale-up any other node-grp for `podA` as it still calculates `node1` to be a possible candidate to join(`ResourceExhausted` errors are recoverable errors). 
-Scale up would still work for any other new pods which can't fit on upcoming `node1`
+Scale-up would still work for any new pods that can't fit on upcoming `node1` but can fit on some other node group. 
 
 If you are sure that the capacity won't recover soon, then kindly re-create `podA`. This will allow CA to see it as a new pod and allow scale-up.
 
