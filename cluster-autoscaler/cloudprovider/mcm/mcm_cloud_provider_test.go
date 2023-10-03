@@ -422,10 +422,10 @@ func TestRefresh(t *testing.T) {
 
 // Different kinds of cases possible and expected cloudprovider.Instance returned for them
 // (mobj, mobjPid, nodeobj)   				    -> instance(nodeobj.pid,_)
-// (mobj, mobjPid, _)         				    -> instance("requested://<machine-name>",status{'creating'})
-// (mobj, _,_)                 				    -> instance("requested://<machine-name>",status{'creating'})
+// (mobj, mobjPid, _)         				    -> instance("requested://<machine-name>",_)
+// (mobj, _,_)                 				    -> instance("requested://<machine-name>",_)
 // (mobj, _,_) with quota error 				-> instance("requested://<machine-name>",status{'creating',{'outofResourcesClass','ResourceExhausted','<message>'}})
-// (mobj, _,_) with invalid credentials error   -> instance("requested://<machine-name>",status{'creating'})
+// (mobj, _,_) with invalid credentials error   -> instance("requested://<machine-name>",_)
 
 // Example machine.status.lastOperation for a `ResourceExhausted` error
 //
@@ -477,11 +477,11 @@ func TestNodes(t *testing.T) {
 			expect{
 				expectationPerInstanceList: []expectationPerInstance{
 					{"fakeID-1", cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
-					{placeholderInstanceIDForMachineObj("machine-with-vm-but-no-node"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
-					{placeholderInstanceIDForMachineObj("machine-with-vm-creating"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-but-no-node"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-creating"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), outOfQuotaInstanceErrorMessage},
 					// invalid credentials error is mapped to Internal code as it can't be fixed by trying another zone
-					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceCreating, cloudprovider.InstanceErrorClass(-1), "", ""},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 				},
 			},
 		},
