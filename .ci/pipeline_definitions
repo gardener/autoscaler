@@ -18,6 +18,8 @@ autoscaler:
         preprocess:
           'inject-commit-hash'
         inject_effective_version: true
+      component_descriptor:
+        ocm_repository: europe-docker.pkg.dev/gardener-project/snapshots
       publish:
         oci-builder: docker-buildx
         platforms:
@@ -30,7 +32,7 @@ autoscaler:
                 source: ~ # default
               steps:
                 build: ~
-            image: 'eu.gcr.io/gardener-project/gardener/autoscaler/cluster-autoscaler'
+            image: europe-docker.pkg.dev/gardener-project/snapshots/gardener/autoscaler/cluster-autoscaler
             dockerfile: './cluster-autoscaler/Dockerfile'
     steps:
       test:
@@ -42,7 +44,8 @@ autoscaler:
     head-update:
       traits:
         component_descriptor:
-          ocm_repository: gardener-public
+          ocm_repository_mappings:
+            - repository: europe-docker.pkg.dev/gardener-project/releases
         draft_release: ~
     pull-request:
       traits:
@@ -51,6 +54,12 @@ autoscaler:
       traits:
         version:
           preprocess: 'finalize'
+        component_descriptor:
+          ocm_repository: europe-docker.pkg.dev/gardener-project/releases
+        publish:
+          dockerimages:
+            cluster-autoscaler:
+              image: europe-docker.pkg.dev/gardener-project/releases/gardener/autoscaler/cluster-autoscaler
         release:
           nextversion: 'bump_minor'
         slack:
@@ -59,4 +68,3 @@ autoscaler:
             internal_scp_workspace:
               channel_name: 'C0170QTBJUW' # gardener-mcm
               slack_cfg_name: 'scp_workspace'
-        component_descriptor: ~
