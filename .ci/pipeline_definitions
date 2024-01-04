@@ -1,4 +1,5 @@
 autoscaler:
+  render_pipeline: False
   template: 'default'
   base_definition:
     repo: ~
