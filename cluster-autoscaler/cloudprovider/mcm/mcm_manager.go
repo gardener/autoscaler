@@ -141,7 +141,7 @@ type nodeTemplate struct {
 	InstanceType *instanceType
 	Region       string
 	Zone         string
-	Architecture string
+	Architecture *string
 	Labels       map[string]string
 	Taints       []apiv1.Taint
 }
@@ -787,7 +787,9 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 			instance.InstanceType = nodeTemplateAttributes.InstanceType
 			region = nodeTemplateAttributes.Region
 			zone = nodeTemplateAttributes.Zone
-			architecture = nodeTemplateAttributes.Architecture
+			if nodeTemplateAttributes.Architecture != nil {
+				architecture = *nodeTemplateAttributes.Architecture
+			}
 			break
 		}
 
@@ -860,7 +862,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 		Zone:         zone, // will be implemented in MCM
 		Labels:       labels,
 		Taints:       taints,
-		Architecture: architecture,
+		Architecture: &architecture,
 	}
 
 	return nodeTmpl, nil
@@ -976,9 +978,9 @@ func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) 
 func buildGenericLabels(template *nodeTemplate, nodeName string) map[string]string {
 	result := make(map[string]string)
 	// TODO: extract from MCM
-	if template.Architecture != "" {
-		result[kubeletapis.LabelArch] = template.Architecture
-		result[apiv1.LabelArchStable] = template.Architecture
+	if template.Architecture != nil {
+		result[kubeletapis.LabelArch] = *template.Architecture
+		result[apiv1.LabelArchStable] = *template.Architecture
 	} else {
 		result[kubeletapis.LabelArch] = cloudprovider.DefaultArch
 		result[apiv1.LabelArchStable] = cloudprovider.DefaultArch
