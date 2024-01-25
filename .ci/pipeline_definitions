@@ -1,5 +1,4 @@
 autoscaler:
-  template: 'default'
   base_definition:
     repo:
       source_labels:
@@ -31,7 +30,6 @@ autoscaler:
                 source: ~ # default
               steps:
                 build: ~
-            registry: 'gcr-readwrite'
             image: 'eu.gcr.io/gardener-project/gardener/autoscaler/cluster-autoscaler'
             dockerfile: './cluster-autoscaler/Dockerfile'
     steps:
