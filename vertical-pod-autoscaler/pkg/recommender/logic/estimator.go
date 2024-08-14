@@ -17,8 +17,6 @@ limitations under the License.
 package logic
 
 import (
-	"encoding/json"
-	"k8s.io/klog/v2"
 	"math"
 	"time"
 
@@ -154,28 +152,9 @@ func (e *minResourcesEstimator) GetResourceEstimation(s *model.AggregateContaine
 	newResources := make(model.Resources)
 	for resource, resourceAmount := range originalResources {
 		if resourceAmount < e.minResources[resource] {
-			klog.Warningf("Computed resources for %s were below minimum! Computed %v, minimum is %v.", resource, resourceAmount, e.minResources[resource])
 			resourceAmount = e.minResources[resource]
-			logHistogramInformation(s)
 		}
 		newResources[resource] = resourceAmount
 	}
 	return newResources
-}
-
-func logHistogramInformation(s *model.AggregateContainerState) {
-	if s.AggregateCPUUsage == nil {
-		klog.Warning("Aggregate CPU usage has no metric samples, cannot show internal histogram data!")
-		return
-	}
-	if s.AggregateMemoryPeaks == nil {
-		klog.Warning("Aggregate memory usage has no metric samples, cannot show internal histogram data!")
-		return
-	}
-	c, _ := s.SaveToCheckpoint()
-	prettyCheckpoint, err := json.MarshalIndent(c, "", "  ")
-	if err != nil {
-		klog.Errorf("Error during marshalling checkpoint: %s", err)
-	}
-	klog.Warningf("Here's the checkpoint/state: %s", prettyCheckpoint)
 }
