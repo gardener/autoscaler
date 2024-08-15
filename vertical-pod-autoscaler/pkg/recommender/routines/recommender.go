@@ -91,7 +91,7 @@ func (r *recommender) UpdateVPAs() {
 		if !found {
 			continue
 		}
-		resources := r.podResourceRecommender.GetRecommendedPodResources(GetContainerNameToAggregateStateMap(vpa))
+		resources := r.podResourceRecommender.GetRecommendedPodResources(GetContainerNameToAggregateStateMap(vpa), key)
 		had := vpa.HasRecommendation()
 
 		listOfResourceRecommendation := logic.MapToListOfRecommendedContainerResources(resources)

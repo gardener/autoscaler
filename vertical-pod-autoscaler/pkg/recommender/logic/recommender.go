@@ -38,7 +38,7 @@ var (
 
 // PodResourceRecommender computes resource recommendation for a Vpa object.
 type PodResourceRecommender interface {
-	GetRecommendedPodResources(containerNameToAggregateStateMap model.ContainerNameToAggregateStateMap) RecommendedPodResources
+	GetRecommendedPodResources(containerNameToAggregateStateMap model.ContainerNameToAggregateStateMap, vpaKey model.VpaID) RecommendedPodResources
 }
 
 // RecommendedPodResources is a Map from container name to recommended resources.
@@ -61,7 +61,7 @@ type podResourceRecommender struct {
 	upperBoundEstimator ResourceEstimator
 }
 
-func (r *podResourceRecommender) GetRecommendedPodResources(containerNameToAggregateStateMap model.ContainerNameToAggregateStateMap) RecommendedPodResources {
+func (r *podResourceRecommender) GetRecommendedPodResources(containerNameToAggregateStateMap model.ContainerNameToAggregateStateMap, vpaKey model.VpaID) RecommendedPodResources {
 	var recommendation = make(RecommendedPodResources)
 	if len(containerNameToAggregateStateMap) == 0 {
 		return recommendation
@@ -74,9 +74,9 @@ func (r *podResourceRecommender) GetRecommendedPodResources(containerNameToAggre
 	}
 
 	recommender := &podResourceRecommender{
-		WithMinResources(minResources, r.targetEstimator),
-		WithMinResources(minResources, r.lowerBoundEstimator),
-		WithMinResources(minResources, r.upperBoundEstimator),
+		WithMinResources(minResources, r.targetEstimator, vpaKey),
+		WithMinResources(minResources, r.lowerBoundEstimator, vpaKey),
+		WithMinResources(minResources, r.upperBoundEstimator, vpaKey),
 	}
 
 	for containerName, aggregatedContainerState := range containerNameToAggregateStateMap {

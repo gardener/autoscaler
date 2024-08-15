@@ -116,6 +116,13 @@ var (
 			Buckets:   relativeBuckets,
 		}, []string{"update_mode", "resource", "vpa_size_log2"},
 	)
+	lowerThanMinRecommendationCounter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metricsNamespace,
+			Name:      "lower_than_min_recommendation_count",
+			Help:      "Count of usage samples when resource recommendation values are lower than the minimum",
+		}, []string{"update_mode", "resource", "vpa"},
+	)
 )
 
 // Register initializes all VPA quality metrics
@@ -129,6 +136,7 @@ func Register() {
 	prometheus.MustRegister(cpuRecommendations)
 	prometheus.MustRegister(memoryRecommendations)
 	prometheus.MustRegister(relativeRecommendationChange)
+	prometheus.MustRegister(lowerThanMinRecommendationCounter)
 }
 
 // observeUsageRecommendationRelativeDiff records relative diff between usage and
@@ -220,6 +228,11 @@ func ObserveRecommendationChange(previous, current corev1.ResourceList, updateMo
 			klog.Warningf("Cannot compare as old recommendation for %v is 0. VPA mode: %v, size: %v", resource, updateMode, vpaSize)
 		}
 	}
+}
+
+// ObserveLowerThanMinRecommendation counts usage samples with lower than min memory recommendations.
+func ObserveLowerThanMinRecommendation(updateMode *vpa_types.UpdateMode, resource corev1.ResourceName, vpaKey string) {
+	lowerThanMinRecommendationCounter.WithLabelValues(updateModeToString(updateMode), string(resource), vpaKey).Inc()
 }
 
 // quantityAsFloat converts resource.Quantity to a float64 value, in some scale (constant per resource but unspecified)
