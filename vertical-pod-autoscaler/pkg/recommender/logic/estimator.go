@@ -159,8 +159,8 @@ func (e *minResourcesEstimator) GetResourceEstimation(s *model.AggregateContaine
 	for resource, resourceAmount := range originalResources {
 		if resourceAmount < e.minResources[resource] {
 			if resource == "memory" {
-				klog.Warningf("Computed resources for %s were below minimum! Computed %v, minimum is %v.", resource, resourceAmount, e.minResources[resource])
-				logHistogramInformation(s)
+				klog.Warningf("Computed %s resources for VPA %s were below minimum! Computed %v, minimum is %v.", resource, klog.KRef(e.vpaKey.Namespace, e.vpaKey.VpaName), resourceAmount, e.minResources[resource])
+				logHistogramInformation(s, e.vpaKey)
 				metrics_quality.ObserveLowerThanMinRecommendation(s.GetUpdateMode(), corev1.ResourceName(resource), e.vpaKey.Namespace+"/"+e.vpaKey.VpaName)
 			}
 			resourceAmount = e.minResources[resource]
@@ -170,19 +170,20 @@ func (e *minResourcesEstimator) GetResourceEstimation(s *model.AggregateContaine
 	return newResources
 }
 
-func logHistogramInformation(s *model.AggregateContainerState) {
+func logHistogramInformation(s *model.AggregateContainerState, vpaKey model.VpaID) {
 	if s.AggregateCPUUsage == nil {
-		klog.Warning("Aggregate CPU usage has no metric samples, cannot show internal histogram data!")
+		klog.Warning("Aggregate CPU usage has no metric samples, cannot show internal histogram data for VPA %s!", klog.KRef(vpaKey.Namespace, vpaKey.VpaName))
 		return
 	}
 	if s.AggregateMemoryPeaks == nil {
-		klog.Warning("Aggregate memory usage has no metric samples, cannot show internal histogram data!")
+		klog.Warning("Aggregate memory usage has no metric samples, cannot show internal histogram data for VPA %s!", klog.KRef(vpaKey.Namespace, vpaKey.VpaName))
 		return
 	}
 	c, _ := s.SaveToCheckpoint()
 	prettyCheckpoint, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
-		klog.Errorf("Error during marshalling checkpoint: %s", err)
+		klog.Errorf("Error during marshalling checkpoint for VPA %s: %s", klog.KRef(vpaKey.Namespace, vpaKey.VpaName), err)
+		return
 	}
-	klog.Warningf("Here's the checkpoint/state: %s", prettyCheckpoint)
+	klog.Warningf("Here's the checkpoint/state for VPA %s: %s", klog.KRef(vpaKey.Namespace, vpaKey.VpaName), prettyCheckpoint)
 }
