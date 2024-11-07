@@ -17,6 +17,9 @@ limitations under the License.
 package mcm
 
 import (
+	"errors"
+	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"k8s.io/utils/ptr"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -133,4 +136,95 @@ func TestFilterNodes(t *testing.T) {
 
 	assert.EqualValues(t, len(filteredNodes), 1)
 	assert.Equal(t, filteredNodes, []*apiv1.Node{node2})
+}
+
+func TestValidateNodeTemplate(t *testing.T) {
+	m5LargeType := createSampleInstanceType("m5.large", "sap.com/mana", resource.MustParse("300"))
+	nt := v1alpha1.NodeTemplate{
+		InstanceType: m5LargeType.InstanceType,
+		Capacity:     make(apiv1.ResourceList),
+	}
+	err := validateNodeTemplate(&nt)
+	assert.NotNil(t, err)
+	assert.True(t, errors.Is(err, ErrInvalidNodeTemplate))
+
+	nt.Region = "europe-west1"
+	nt.Zone = nt.Region + "-b"
+
+	err = validateNodeTemplate(&nt)
+	assert.NotNil(t, err)
+	assert.True(t, errors.Is(err, ErrInvalidNodeTemplate))
+
+	if err != nil {
+		t.Logf("error %s", err)
+	}
+}
+
+func TestBuildNodeFromTemplate(t *testing.T) {
+	m := &McmManager{}
+	namePrefix := "bingo"
+	m5LargeType := createSampleInstanceType("m5.large", "sap.com/mana", resource.MustParse("300"))
+	labels := map[string]string{
+		"weapon": "light-saber",
+	}
+	nt := nodeTemplate{
+		InstanceType: m5LargeType,
+		Architecture: ptr.To("amd64"),
+		Labels:       labels,
+	}
+	nt.Region = "europe-west1"
+	nt.Zone = nt.Region + "-b"
+	node, err := m.buildNodeFromTemplate(namePrefix, &nt)
+	assert.Nil(t, err)
+	if err != nil {
+		t.Logf("error %s", err)
+	}
+	assert.True(t, isSubset(labels, node.Labels), "labels should be a subset of node.Labels")
+	for _, k := range coreResourceNames {
+		assert.Contains(t, node.Status.Capacity, k, "node.Status.Capacity should contain the mandatory resource named: %s", k)
+	}
+
+	// test with gpu resource
+	gpuQuantity := resource.MustParse("4")
+	nt.InstanceType.GPU = gpuQuantity
+	node, err = m.buildNodeFromTemplate(namePrefix, &nt)
+	assert.Nil(t, err)
+	if err != nil {
+		t.Logf("error %s", err)
+	}
+	for _, k := range coreResourceNames {
+		assert.Contains(t, node.Status.Capacity, k, "node.Status.Capacity should contain the mandatory resource named: %s", k)
+	}
+	var hasGpuResource bool
+	for _, k := range gpuResourceNames {
+		q, ok := node.Status.Capacity[k]
+		if ok {
+			hasGpuResource = true
+			assert.Equal(t, gpuQuantity, q, "node.Status.Capacity has gpu resource named %q with value %s instead of %s", k, q, gpuQuantity)
+		}
+	}
+	assert.True(t, hasGpuResource, "node.Status.Capacity should have a gpu resource with one of the names %q", gpuResourceNames)
+}
+
+func createSampleInstanceType(instanceTypeName string, customResourceName apiv1.ResourceName, customResourceQuantity resource.Quantity) *instanceType {
+	awsM5Large := AWSInstanceTypes[instanceTypeName]
+	extendedResources := make(apiv1.ResourceList)
+	extendedResources[customResourceName] = customResourceQuantity
+	iType := &instanceType{
+		InstanceType:      awsM5Large.InstanceType,
+		VCPU:              awsM5Large.VCPU,
+		Memory:            awsM5Large.Memory,
+		GPU:               awsM5Large.GPU,
+		ExtendedResources: extendedResources,
+	}
+	return iType
+}
+
+func isSubset[K comparable, V comparable](map1, map2 map[K]V) bool {
+	for k, v := range map1 {
+		if val, ok := map2[k]; !ok || val != v {
+			return false
+		}
+	}
+	return true
 }
