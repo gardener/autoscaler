@@ -19,6 +19,7 @@ package mcm
 import (
 	"errors"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
 	"k8s.io/utils/ptr"
 	"maps"
 	"math/rand/v2"
@@ -182,7 +183,7 @@ func TestBuildNodeFromTemplate(t *testing.T) {
 		t.Logf("error %s", err)
 	}
 	assert.True(t, isSubset(labels, node.Labels), "labels should be a subset of node.Labels")
-	for _, k := range coreResourceNames {
+	for _, k := range []apiv1.ResourceName{apiv1.ResourceMemory, apiv1.ResourceCPU} {
 		assert.Contains(t, node.Status.Capacity, k, "node.Status.Capacity should contain the mandatory resource named: %s", k)
 	}
 
@@ -194,18 +195,14 @@ func TestBuildNodeFromTemplate(t *testing.T) {
 	if err != nil {
 		t.Logf("error %s", err)
 	}
-	for _, k := range coreResourceNames {
+	for _, k := range []apiv1.ResourceName{apiv1.ResourceMemory, apiv1.ResourceCPU, gpu.ResourceNvidiaGPU} {
 		assert.Contains(t, node.Status.Capacity, k, "node.Status.Capacity should contain the mandatory resource named: %s", k)
 	}
-	var hasGpuResource bool
-	for _, k := range extraResourceNames {
-		q, ok := node.Status.Capacity[k]
-		if ok {
-			hasGpuResource = true
-			assert.Equal(t, gpuQuantity, q, "node.Status.Capacity has gpu resource named %q with value %s instead of %s", k, q, gpuQuantity)
-		}
+	actualGpuQuantity, hasGpuResource := node.Status.Capacity[gpu.ResourceNvidiaGPU]
+	assert.True(t, hasGpuResource, "node.Status.Capacity should have a gpu resource named %q", gpu.ResourceNvidiaGPU)
+	if hasGpuResource {
+		assert.Equal(t, gpuQuantity, actualGpuQuantity, "node.Status.Capacity should have gpu resource named %q with value %s instead of %s", gpu.ResourceDirectX, gpuQuantity, actualGpuQuantity)
 	}
-	assert.True(t, hasGpuResource, "node.Status.Capacity should have a gpu resource with one of the names %q", extraResourceNames)
 }
 
 func TestFilterExtendedResources(t *testing.T) {
