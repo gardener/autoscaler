@@ -20,6 +20,8 @@ import (
 	"errors"
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"k8s.io/utils/ptr"
+	"maps"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -196,14 +198,31 @@ func TestBuildNodeFromTemplate(t *testing.T) {
 		assert.Contains(t, node.Status.Capacity, k, "node.Status.Capacity should contain the mandatory resource named: %s", k)
 	}
 	var hasGpuResource bool
-	for _, k := range gpuResourceNames {
+	for _, k := range extraResourceNames {
 		q, ok := node.Status.Capacity[k]
 		if ok {
 			hasGpuResource = true
 			assert.Equal(t, gpuQuantity, q, "node.Status.Capacity has gpu resource named %q with value %s instead of %s", k, q, gpuQuantity)
 		}
 	}
-	assert.True(t, hasGpuResource, "node.Status.Capacity should have a gpu resource with one of the names %q", gpuResourceNames)
+	assert.True(t, hasGpuResource, "node.Status.Capacity should have a gpu resource with one of the names %q", extraResourceNames)
+}
+
+func TestFilterExtendedResources(t *testing.T) {
+	resources := make(apiv1.ResourceList)
+	for _, n := range knownResourceNames {
+		resources[n] = *resource.NewQuantity(rand.Int64(), resource.DecimalSI)
+	}
+	customResources := make(apiv1.ResourceList)
+	customResources["resource.com/dongle"] = resource.MustParse("50")
+	customResources["quantum.com/memory"] = resource.MustParse("100Gi")
+
+	allResources := resources.DeepCopy()
+	maps.Copy(allResources, customResources)
+
+	extendedResources := filterExtendedResources(allResources)
+	t.Logf("TestFilterExtendedResources obtained: %+v", extendedResources)
+	assert.Equal(t, customResources, extendedResources)
 }
 
 func createSampleInstanceType(instanceTypeName string, customResourceName apiv1.ResourceName, customResourceQuantity resource.Quantity) *instanceType {

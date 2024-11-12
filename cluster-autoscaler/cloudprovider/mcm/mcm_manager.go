@@ -116,9 +116,9 @@ var (
 
 	// ErrInvalidNodeTemplate is a sentinel error that indicates that the nodeTemplate is invalid.
 	ErrInvalidNodeTemplate = errors.New("invalid node template")
-	coreResourceNames      = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory}
-	gpuResourceNames       = []v1.ResourceName{"gpu", gpu.ResourceNvidiaGPU}
-	knownResourceNames     = slices.Concat(coreResourceNames, gpuResourceNames, []v1.ResourceName{v1.ResourcePods, v1.ResourceEphemeralStorage})
+	coreResourceNames      = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, "gpu"}
+	extraResourceNames     = []v1.ResourceName{gpu.ResourceNvidiaGPU, v1.ResourcePods, v1.ResourceEphemeralStorage}
+	knownResourceNames     = slices.Concat(coreResourceNames, extraResourceNames)
 )
 
 // McmManager manages the client communication for MachineDeployments.
@@ -715,7 +715,6 @@ func validateNodeTemplate(nodeTemplateAttributes *v1alpha1.NodeTemplate) error {
 
 	if allErrs != nil {
 		return errors.Join(allErrs...)
-		//return fmt.Errorf("%s", allErrs)
 	}
 
 	return nil
@@ -979,7 +978,7 @@ func (m *McmManager) buildNodeFromTemplate(name string, template *nodeTemplate) 
 
 	// populate extended resources from nodeTemplate
 	if len(template.InstanceType.ExtendedResources) > 0 {
-		klog.V(3).Infof("Copying extended resources %v to template node.Status.Capacity", template.InstanceType.ExtendedResources)
+		klog.V(2).Infof("Copying extended resources %v to template node.Status.Capacity", template.InstanceType.ExtendedResources)
 		maps.Copy(node.Status.Capacity, template.InstanceType.ExtendedResources)
 	}
 
@@ -1031,15 +1030,11 @@ func isMachineFailedOrTerminating(machine *v1alpha1.Machine) bool {
 	return false
 }
 
+// filterExtendedResources removes knownResourceNames from allResources and retains only the extendedResources.
 func filterExtendedResources(allResources v1.ResourceList) (extendedResources v1.ResourceList) {
-	extendedResources = make(v1.ResourceList)
-	for _, n := range knownResourceNames {
-		r, ok := allResources[n]
-		if ok {
-			// don't add known resources to extendedResources
-			continue
-		}
-		extendedResources[n] = r
-	}
+	extendedResources = allResources.DeepCopy()
+	maps.DeleteFunc(extendedResources, func(name v1.ResourceName, _ resource.Quantity) bool {
+		return slices.Contains(knownResourceNames, name)
+	})
 	return
 }
