@@ -32,6 +32,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -57,7 +58,6 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/config/dynamic"
 	"k8s.io/autoscaler/cluster-autoscaler/processors/nodegroupset"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/taints"
 	"k8s.io/client-go/discovery"
 	appsinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers"
@@ -402,9 +402,52 @@ func (m *McmManager) GetMachineDeploymentForMachine(machine *Ref) (*MachineDeplo
 	}, nil
 }
 
-// Refresh does nothing at the moment.
+// Refresh method, for each machine deployment, will reset the priority of the machines if the number of annotated machines is more than desired.
+// It will select the machines to reset the priority based on the descending order of creation timestamp.
 func (m *McmManager) Refresh() error {
-	return nil
+	machineDeployments, err := m.machineDeploymentLister.MachineDeployments(m.namespace).List(labels.Everything())
+	if err != nil {
+		klog.Errorf("[Refresh] unable to list machine deployments")
+		return err
+	}
+	var collectiveError error
+	for _, machineDeployment := range machineDeployments {
+		// ignore the machine deployment if it is in rolling update
+		if !isRollingUpdateFinished(machineDeployment) {
+			klog.Infof("[Refresh] machine deployment %s is under rolling update, skipping", machineDeployment.Name)
+			continue
+		}
+		replicas := machineDeployment.Spec.Replicas
+		// check if number of annotated machine objects is more than desired and correspondingly reset the priority annotation value if needed.
+		machines, err := m.getMachinesForMachineDeployment(machineDeployment.Name)
+		if err != nil {
+			klog.Errorf("[Refresh] failed to get machines for machine deployment %s, hence skipping it. Err: %v", machineDeployment.Name, err.Error())
+			collectiveError = errors.Join(collectiveError, err)
+			continue
+		}
+		var annotatedMachines []*v1alpha1.Machine
+		for _, machine := range machines {
+			// no need to reset priority for machines already in termination or failed phase
+			if machine.Status.CurrentStatus.Phase == v1alpha1.MachineTerminating || machine.Status.CurrentStatus.Phase == v1alpha1.MachineFailed {
+				continue
+			}
+			if machine.Annotations != nil && machine.Annotations[machinePriorityAnnotation] != defaultPriorityValue {
+				annotatedMachines = append(annotatedMachines, machine)
+			}
+		}
+		if int(replicas) > len(machines)-len(annotatedMachines) {
+			slices.SortStableFunc(annotatedMachines, func(m1, m2 *v1alpha1.Machine) int {
+				return -m1.CreationTimestamp.Compare(m2.CreationTimestamp.Time)
+			})
+			diff := int(replicas) - len(machines) + len(annotatedMachines)
+			targetRefs := make([]*Ref, 0, diff)
+			for i := 0; i < min(diff, len(annotatedMachines)); i++ {
+				targetRefs = append(targetRefs, &Ref{Name: annotatedMachines[i].Name, Namespace: annotatedMachines[i].Namespace})
+			}
+			collectiveError = errors.Join(collectiveError, m.resetPriorityForMachines(targetRefs))
+		}
+	}
+	return collectiveError
 }
 
 // Cleanup does nothing at the moment.
@@ -440,7 +483,7 @@ func (m *McmManager) SetMachineDeploymentSize(ctx context.Context, machinedeploy
 	return true, err
 }
 
-// DeleteMachines deletes the Machines and also reduces the desired replicas of the MachineDeployment in parallel.
+// DeleteMachines annotates the target machines and also reduces the desired replicas of the MachineDeployment.
 func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 	if len(targetMachineRefs) == 0 {
 		return nil
@@ -459,7 +502,7 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 		return fmt.Errorf("MachineDeployment %s is under rolling update , cannot reduce replica count", commonMachineDeployment.Name)
 	}
 	// update priorities of machines to be deleted except the ones already in termination to 1
-	scaleDownAmount, err := m.prioritizeMachinesForDeletion(targetMachineRefs, commonMachineDeployment.Name)
+	scaleDownAmount, err := m.prioritizeMachinesForDeletion(targetMachineRefs)
 	if err != nil {
 		return err
 	}
@@ -468,33 +511,26 @@ func (m *McmManager) DeleteMachines(targetMachineRefs []*Ref) error {
 		return m.scaleDownMachineDeployment(ctx, commonMachineDeployment.Name, scaleDownAmount)
 	}, "MachineDeployment", "update", commonMachineDeployment.Name)
 	if err != nil {
-		klog.Errorf("unable to scale in machine deployment %s, Error: %v", commonMachineDeployment.Name, err)
-		return fmt.Errorf("unable to scale in machine deployment %s, Error: %v", commonMachineDeployment.Name, err)
+		klog.Errorf("unable to scale in machine deployment %s, will reset priority of target machines, Error: %v", commonMachineDeployment.Name, err)
+		return errors.Join(err, m.resetPriorityForMachines(targetMachineRefs))
 	}
 	return nil
 }
 
-// resetPriorityForNotToBeDeletedMachines resets the priority of machines with nodes without ToBeDeleted taint to 3
-func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error {
-	allMachinesForMachineDeployment, err := m.getMachinesForMachineDeployment(mdName)
-	if err != nil {
-		return fmt.Errorf("unable to list all machines for node group %s, Error: %v", mdName, err)
-	}
+// resetPriorityForMachines resets the priority of machines passed in the argument to defaultPriorityValue
+func (m *McmManager) resetPriorityForMachines(mcRefs []*Ref) error {
 	var collectiveError error
-	for _, machine := range allMachinesForMachineDeployment {
+	for _, mcRef := range mcRefs {
+		machine, err := m.machineLister.Machines(m.namespace).Get(mcRef.Name)
+		if err != nil {
+			collectiveError = errors.Join(collectiveError, fmt.Errorf("unable to get Machine object %s, Error: %v", mcRef, err))
+			continue
+		}
 		ctx, cancelFn := context.WithDeadline(context.Background(), time.Now().Add(defaultResetAnnotationTimeout))
-		err := func() error {
+		err = func() error {
 			defer cancelFn()
 			val, ok := machine.Annotations[machinePriorityAnnotation]
 			if ok && val != defaultPriorityValue {
-				nodeName := machine.Labels[v1alpha1.NodeLabelKey]
-				node, err := m.nodeLister.Get(nodeName)
-				if err != nil && !kube_errors.IsNotFound(err) {
-					return fmt.Errorf("unable to get Node object %s for machine %s, Error: %v", nodeName, machine.Name, err)
-				} else if err == nil && taints.HasToBeDeletedTaint(node) {
-					// Don't update priority annotation if the taint is present on the node
-					return nil
-				}
 				_, err = m.updateAnnotationOnMachine(ctx, machine.Name, machinePriorityAnnotation, defaultPriorityValue)
 				return err
 			}
@@ -509,7 +545,7 @@ func (m *McmManager) resetPriorityForNotToBeDeletedMachines(mdName string) error
 }
 
 // prioritizeMachinesForDeletion prioritizes the targeted machines by updating their priority annotation to 1
-func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref, mdName string) (int, error) {
+func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref) (int, error) {
 	var expectedToTerminateMachineNodePairs = make(map[string]string)
 	for _, machineRef := range targetMachineRefs {
 		// Trying to update the priority of machineRef till m.maxRetryTimeout
@@ -561,7 +597,7 @@ func (m *McmManager) updateAnnotationOnMachine(ctx context.Context, mcName strin
 	}
 	_, err = m.machineClient.Machines(machine.Namespace).Update(ctx, clone, metav1.UpdateOptions{})
 	if err == nil {
-		klog.Infof("Machine %s marked with priority 1 successfully", mcName)
+		klog.Infof("Machine %s marked with priority %s successfully", mcName, val)
 	}
 	return true, err
 }
@@ -585,7 +621,7 @@ func (m *McmManager) scaleDownMachineDeployment(ctx context.Context, mdName stri
 	mdclone.Spec.Replicas = expectedReplicas
 	_, err = m.machineClient.MachineDeployments(mdclone.Namespace).Update(ctx, mdclone, metav1.UpdateOptions{})
 	if err != nil {
-		return true, err
+		return true, fmt.Errorf("unable to scale in machine deployment %s, Error: %w", mdName, err)
 	}
 	klog.V(2).Infof("MachineDeployment %s size decreased to %d ", mdclone.Name, mdclone.Spec.Replicas)
 	return false, nil
