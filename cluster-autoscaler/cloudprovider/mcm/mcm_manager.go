@@ -75,8 +75,10 @@ const (
 	// defaultResetAnnotationTimeout is the timeout for resetting the priority annotation of a machine
 	defaultResetAnnotationTimeout = 10 * time.Second
 	// defaultPriorityValue is the default value for the priority annotation used by CA. It is set to 3 because MCM defaults the priority of machine it creates to 3.
-	defaultPriorityValue   = "3"
-	minResyncPeriodDefault = 1 * time.Hour
+	defaultPriorityValue = "3"
+	// priorityValueForCandidateMachines is the priority annotation value set on machines that the CA wants to be deleted. Its value is set to 1.
+	priorityValueForCandidateMachines = "1"
+	minResyncPeriodDefault            = 1 * time.Hour
 	// machinePriorityAnnotation is the annotation to set machine priority while deletion
 	machinePriorityAnnotation = "machinepriority.machine.sapcloud.io"
 	// kindMachineClass is the kind for generic machine class used by the OOT providers
@@ -89,13 +91,10 @@ const (
 	machineGroup = "machine.sapcloud.io"
 	// machineGroup is the API version used to identify machine API group objects
 	machineVersion = "v1alpha1"
-	// machineDeploymentProgressing tells that deployment is progressing. Progress for a MachineDeployment is considered when a new machine set is created or adopted, and when new machines scale up or old machines scale down.
-	// Progress is not estimated for paused MachineDeployments. It is also updated if progressDeadlineSeconds is not specified(treated as infinite deadline), in which case it would never be updated to "false".
-	machineDeploymentProgressing v1alpha1.MachineDeploymentConditionType = "Progressing"
 	// newISAvailableReason is the reason in "Progressing" condition when machineDeployment rollout is complete
 	newISAvailableReason = "NewMachineSetAvailable"
-	// conditionTrue means the given condition status is true
-	conditionTrue v1alpha1.ConditionStatus = "True"
+	// machineDeploymentPausedReason is the reason in "Progressing" condition when machineDeployment is paused
+	machineDeploymentPausedReason = "DeploymentPaused"
 	// machineDeploymentNameLabel key for Machine Deployment name in machine labels
 	machineDeploymentNameLabel = "name"
 )
@@ -425,24 +424,24 @@ func (m *McmManager) Refresh() error {
 			collectiveError = errors.Join(collectiveError, err)
 			continue
 		}
-		var annotatedMachines []*v1alpha1.Machine
+		var machinesMarkedForDeletion []*v1alpha1.Machine
 		for _, machine := range machines {
 			// no need to reset priority for machines already in termination or failed phase
 			if machine.Status.CurrentStatus.Phase == v1alpha1.MachineTerminating || machine.Status.CurrentStatus.Phase == v1alpha1.MachineFailed {
 				continue
 			}
-			if machine.Annotations != nil && machine.Annotations[machinePriorityAnnotation] != defaultPriorityValue {
-				annotatedMachines = append(annotatedMachines, machine)
+			if annotValue, ok := machine.Annotations[machinePriorityAnnotation]; ok && annotValue == priorityValueForCandidateMachines {
+				machinesMarkedForDeletion = append(machinesMarkedForDeletion, machine)
 			}
 		}
-		if int(replicas) > len(machines)-len(annotatedMachines) {
-			slices.SortStableFunc(annotatedMachines, func(m1, m2 *v1alpha1.Machine) int {
+		if int(replicas) > len(machines)-len(machinesMarkedForDeletion) {
+			slices.SortStableFunc(machinesMarkedForDeletion, func(m1, m2 *v1alpha1.Machine) int {
 				return -m1.CreationTimestamp.Compare(m2.CreationTimestamp.Time)
 			})
-			diff := int(replicas) - len(machines) + len(annotatedMachines)
+			diff := int(replicas) - len(machines) + len(machinesMarkedForDeletion)
 			targetRefs := make([]*Ref, 0, diff)
-			for i := 0; i < min(diff, len(annotatedMachines)); i++ {
-				targetRefs = append(targetRefs, &Ref{Name: annotatedMachines[i].Name, Namespace: annotatedMachines[i].Namespace})
+			for i := 0; i < min(diff, len(machinesMarkedForDeletion)); i++ {
+				targetRefs = append(targetRefs, &Ref{Name: machinesMarkedForDeletion[i].Name, Namespace: machinesMarkedForDeletion[i].Namespace})
 			}
 			collectiveError = errors.Join(collectiveError, m.resetPriorityForMachines(targetRefs))
 		}
@@ -563,7 +562,7 @@ func (m *McmManager) prioritizeMachinesForDeletion(targetMachineRefs []*Ref) (in
 				return false, nil
 			}
 			expectedToTerminateMachineNodePairs[mc.Name] = mc.Labels["node"]
-			return m.updateAnnotationOnMachine(ctx, mc.Name, machinePriorityAnnotation, "1")
+			return m.updateAnnotationOnMachine(ctx, mc.Name, machinePriorityAnnotation, priorityValueForCandidateMachines)
 		}, "Machine", "update", machineRef.Name); err != nil {
 			klog.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, Error: %v", machineRef.Name, err)
 			return 0, fmt.Errorf("could not prioritize machine %s for deletion, aborting scale in of machine deployment, Error: %v", machineRef.Name, err)
@@ -909,9 +908,12 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(machinedeployment *Machine
 func isRollingUpdateFinished(md *v1alpha1.MachineDeployment) bool {
 	for _, cond := range md.Status.Conditions {
 		switch {
-		case cond.Type == machineDeploymentProgressing && cond.Status == conditionTrue && cond.Reason == newISAvailableReason:
+		case cond.Type == v1alpha1.MachineDeploymentProgressing && cond.Status == v1alpha1.ConditionTrue && cond.Reason == newISAvailableReason:
 			return true
-		case cond.Type == machineDeploymentProgressing:
+		// NOTE:- This check is for paused machine deployments as is taken from MCM. If the check in MCM changes, this should be updated.
+		case cond.Type == v1alpha1.MachineDeploymentProgressing && cond.Status == v1alpha1.ConditionUnknown && cond.Reason == machineDeploymentPausedReason:
+			return true
+		case cond.Type == v1alpha1.MachineDeploymentProgressing:
 			return false
 		}
 	}

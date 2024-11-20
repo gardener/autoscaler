@@ -410,6 +410,24 @@ func TestRefresh(t *testing.T) {
 			},
 		},
 		{
+			"should NOT skip paused machine deployment",
+			setup{
+				nodes:    newNodes(1, "fakeID", []bool{false}),
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}, []bool{false}),
+				machineDeployments: newMachineDeployments(1, 1, &v1alpha1.MachineDeploymentStatus{
+					Conditions: []v1alpha1.MachineDeploymentCondition{
+						{Type: v1alpha1.MachineDeploymentProgressing, Status: v1alpha1.ConditionUnknown, Reason: machineDeploymentPausedReason},
+					},
+				}, nil, nil),
+				nodeGroups:    []string{nodeGroup2},
+				mcmDeployment: newMCMDeployment(1),
+			},
+			expect{
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3"}, []bool{false}),
+				err:      nil,
+			},
+		},
+		{
 			"should ignore terminating/failed machines in checking if number of annotated machines is more than desired",
 			setup{
 				nodes: newNodes(1, "fakeID", []bool{true}),
