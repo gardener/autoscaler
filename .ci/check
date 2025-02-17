@@ -47,4 +47,5 @@ go get -u golang.org/x/lint/golint
 PACKAGES="$(go list -e ./... | grep -vE '/tmp/|/vendor/')"
 LINT_FOLDERS="$(echo ${PACKAGES} | sed "s|k8s.io/autoscaler/cluster-autoscaler|.|g")"
 
-#TODO: To add lint checking, after fixing issues
+# Run Static Application Security Testing (SAST) using gosec
+make sast-report
