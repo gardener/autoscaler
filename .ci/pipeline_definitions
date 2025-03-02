@@ -31,6 +31,8 @@ autoscaler:
     steps:
       test:
         image: 'golang:1.22.2'
+      check:
+        image: 'golang:1.22.2'
       build:
         image: 'golang:1.22.2'
         output_dir: 'binary'
