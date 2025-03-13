@@ -1453,7 +1453,7 @@ Assumption: We assume that the developer executing the below stages wants to syn
 1. Run MCM cloud provider implementation tests: `go test $(go list ./cloudprovider/mcm/...)`
 1. Verify that binary can be created using: `../.ci/build`
 1. Execute Integration Tests Locally:
-   1. Follow instructions at: [IT Usage Guide](https://github.com/gardener/autoscaler/blob/machine-controller-manager-provider/cluster-autoscaler/integration/usage.md##prerequisite)
+   1. Follow instructions at: [IT Usage Guide](./integration/usage.md)
    1. Before running `make download-kubeconfigs`, create a folder `mkdir -p dev/kubeconfigs`
    1. This target will print out a list of shell variable `EXPORT` statements. Copy-paste the printed shell commands and execute them
    1. Now run `make test-integration`
