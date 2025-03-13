@@ -1445,7 +1445,7 @@ Assumption: We assume that the developer executing the below stages wants to syn
    - Accept the version in `cluster-autoscaler/version/version.go` . This is the version of kubernetes autoscaler with which syncing is being done. 
 1. In `cluster-autoscaler/go.mod`, upgrade versions of `machine-controller-manager-provider-aws`,  `machine-controller-manager-provider-azure` to the latest available release.
 1. Run update dependencies script after changing to `cluster-autoscaler` directory:  `./hack/update-deps.sh 1.x.0 1.x.0` (first version corresponds to k8s version for `cluster-autoscaler/go.mod` and the second one is the k8s version for `cluster-autoscaler/apis/go.mod`)
-   - There might be a need to run `go mod tidy` after a successfull run of the above script.
+   - There might be a need to run `go mod tidy` after a successful run of the above script.
 1. Create a new file `cluster-autoscaler/SYNC-CHANGES/SYNC_CHANGES-1.x.md` summarily describing the changes done. Follow existing convention for sync changes. Use upstream release notes as a guide when needed.
 
 #### Stage D: Verification
