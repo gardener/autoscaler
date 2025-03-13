@@ -12,6 +12,7 @@ Session.vim
 .netrwhist
 .vscode
 ./integration/logs
+autoscaler_processs.log
 
 # gosec
 gosec-report.sarif
