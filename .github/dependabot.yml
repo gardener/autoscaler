@@ -11,7 +11,7 @@ updates:
   directory: "/vertical-pod-autoscaler/pkg/recommender"
   schedule:
     interval: daily
-   ignore:
+  ignore:
     - dependency-name: "golang"
       versions: ["*.*rc*"]
   open-pull-requests-limit: 3
