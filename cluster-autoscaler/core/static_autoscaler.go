@@ -785,6 +785,12 @@ func (a *StaticAutoscaler) removeOldUnregisteredNodes(allUnregisteredNodes []clu
 		}
 
 		if a.ForceDeleteLongUnregisteredNodes {
+			// FORK-CHANGE: added log and computation of nodeNames for ForceDeleteNodes
+			nodesToDeleteNames := make([]string, 0, len(nodesToDelete))
+			for _, node := range nodesToDelete {
+				nodesToDeleteNames = append(nodesToDeleteNames, node.Name)
+			}
+			klog.V(0).Infof("for NodeGroup %q, Received request to force delete nodes:- %v", nodeGroup, nodesToDeleteNames)
 			err = nodeGroup.ForceDeleteNodes(nodesToDelete)
 			if err == cloudprovider.ErrNotImplemented {
 				err = nodeGroup.DeleteNodes(nodesToDelete)

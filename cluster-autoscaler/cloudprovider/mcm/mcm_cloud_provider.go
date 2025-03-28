@@ -401,7 +401,6 @@ func (ngImpl *nodeGroup) DeleteNodes(nodes []*apiv1.Node) error {
 // ForceDeleteNodes deletes the nodes from the group without checking for minSize constraint.
 // It's expected that the method won't be called for nodes that aren't part of ANY machine deployment.
 func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
-	klog.V(0).Infof("for NodeGroup %q, Received request to force delete nodes:- %v", ngImpl.Name, getNodeNames(nodes))
 	var toBeDeletedMachineInfos = make([]machineInfo, 0, len(nodes))
 	for _, node := range nodes {
 		belongs, mInfo, err := ngImpl.belongs(node)

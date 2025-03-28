@@ -26,7 +26,7 @@
 
 ### During vendoring k8s
 - mcm v0.55.0 -> 0.57.0
-- mcm-providerr-aws v0.20.0 -> 0.23.0
+- mcm-provider-aws v0.20.0 -> 0.23.0
 - mcm-provider-azure v0.13.0 -> 0.15.1
 - k8s.io/api v0.31.1 -> v0.32.0
 - github.com/onsi/ginkgo/v2 v2.19.0 -> v2.21.0

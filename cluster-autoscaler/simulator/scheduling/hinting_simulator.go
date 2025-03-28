@@ -70,7 +70,8 @@ func (s *HintingSimulator) TrySchedulePods(clusterSnapshot clustersnapshot.Clust
 		}
 
 		if nodeName != "" {
-			klogx.V(4).UpTo(loggingQuota).Infof("Pod %s/%s can be moved to %s", pod.Namespace, pod.Name, nodeName)
+            // FORK-CHANGE: log level changed to 2 for better debugging.
+			klogx.V(2).UpTo(loggingQuota).Infof("Pod %s/%s can be moved to %s", pod.Namespace, pod.Name, nodeName)
 			statuses = append(statuses, Status{Pod: pod, NodeName: nodeName})
 		} else if breakOnFailure {
 			break

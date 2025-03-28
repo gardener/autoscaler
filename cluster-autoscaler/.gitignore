@@ -12,6 +12,7 @@ Session.vim
 .netrwhist
 .vscode
 ./integration/logs
+integration.test
 autoscaler_processs.log*
 
 # gosec
