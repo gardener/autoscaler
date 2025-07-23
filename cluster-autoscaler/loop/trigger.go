@@ -20,8 +20,6 @@ import (
 	"context"
 	"time"
 
-	"reflect"
-
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/autoscaler/cluster-autoscaler/metrics"
@@ -29,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	podv1 "k8s.io/kubernetes/pkg/api/v1/pod"
+	"reflect"
 )
 
 const maxPodChangeAge = 10 * time.Second
@@ -140,7 +139,7 @@ func (t *LoopTrigger) logTriggerReason(message string) {
 	case <-t.podObserver.unschedulablePodChan:
 		klog.Info("Autoscaler loop triggered by unschedulable pod appearing")
 	default:
-		klog.Infof(message)
+		klog.Info(message)
 	}
 }
 

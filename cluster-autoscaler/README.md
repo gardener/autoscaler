@@ -49,6 +49,7 @@ Starting from Kubernetes 1.12, versioning scheme was changed to match Kubernetes
 
 | Kubernetes Version | CA Version               | Chart Version |
 |--------------------|--------------------------|---------------|
+| 1.32.x             | 1.32.x                   |9.45.0+|
 | 1.31.x             | 1.31.x                   |9.38.0+|
 | 1.30.x             | 1.30.x                   |9.37.0+|
 | 1.29.X             | 1.29.X                   |9.35.0+|
@@ -91,15 +92,16 @@ target ETA and the actual releases.
 
 | Date       | Maintainer Preparing Release | Backup Maintainer | Type  |
 |------------|------------------------------|-------------------|-------|
-| 2024-07-18 | x13n                         | MaciekPytel       | patch |
-| 2024-08-21 | MaciekPytel                  | gjtempleton       | 1.31  |
-| 2024-09-18 | gjtempleton                  | towca             | patch |
-| 2024-11-20 | towca                        | BigDarkClown      | patch |
-| 2024-12-18 | BigDarkClown                 | x13n              | 1.32  |
-| 2025-01-22 | x13n                         | MaciekPytel       | patch |
+| 2025-06-11 | jackfrancis                  | gjtempleton       | 1.33  |
+| 2025-07-16 | gjtempleton                  | towca             | patch |
+| 2025-08-20 | towca                        | BigDarkClown      | patch |
+| 2025-09-17 | BigDarkClown                 | x13n              | 1.34  |
+| 2025-10-22 | x13n                         | jackfrancis       | patch |
+| 2025-11-19 | jackfrancis                  | gjtempleton       | patch |
 
 Additional patch releases may happen outside of the schedule in case of critical
 bugs or vulnerabilities.
+
 
 # Releases (Gardener/Autoscaler)
 
@@ -107,6 +109,7 @@ Starting with Gardener/Autoscaler v1.20, versioning scheme has changed to match 
 
 | Kubernetes Version | CA Version | Gardener CA Version | 
 |--------------------|------------|---------------------|
+| 1.33.X             | 1.33.X     | 1.33.X              |
 | 1.32.X             | 1.32.X     | 1.32.X              |
 | 1.31.X             | 1.31.X     | 1.31.X              |
 | 1.30.X             | 1.30.X     | 1.30.X              |
@@ -130,6 +133,7 @@ Starting with Gardener/Autoscaler v1.20, versioning scheme has changed to match 
 | 1.19.X             | 1.19.X     | 0.12.X              |
 | 1.19.X             | 1.19.X     | 0.11.X              |
 | 1.12.X             | 1.12.X     | 0.10.X              |
+
 
 # Notable changes
 

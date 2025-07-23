@@ -24,9 +24,9 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/config"
 	"k8s.io/autoscaler/cluster-autoscaler/simulator/framework"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/scheduler"
-	klog "k8s.io/klog/v2"
 )
 
+// FORK-CHANGE: labels for gardener
 const (
 	// LabelWorkerKubernetesVersion is a constant for a label that indicates the kubernetes version of the kubelet on the node
 	LabelWorkerKubernetesVersion = "worker.gardener.cloud/kubernetes-version"
@@ -147,13 +147,11 @@ func IsCloudProviderNodeInfoSimilar(
 
 	for kind, qtyList := range capacity {
 		if len(qtyList) != 2 {
-			klog.V(3).Infof("nodes %s and %s are not similar, missing capacity %s", n1.Node().Name, n2.Node().Name, kind)
 			return false
 		}
 		switch kind {
 		case apiv1.ResourceMemory:
 			if !resourceListWithinTolerance(qtyList, ratioOpts.MaxCapacityMemoryDifferenceRatio) {
-				klog.V(3).Infof("nodes %s and %s are not similar, memory not within tolerance", n1.Node().Name, n2.Node().Name)
 				return false
 			}
 		default:
@@ -161,7 +159,6 @@ func IsCloudProviderNodeInfoSimilar(
 			// If this is ever changed, enforcing MaxCoresTotal limits
 			// as it is now may no longer work.
 			if qtyList[0].Cmp(qtyList[1]) != 0 {
-				klog.V(3).Infof("nodes %s and %s are not similar, %s does not match", n1.Node().Name, n2.Node().Name, kind)
 				return false
 			}
 		}
@@ -169,16 +166,13 @@ func IsCloudProviderNodeInfoSimilar(
 
 	// For allocatable and free we allow resource quantities to be within a few % of each other
 	if !resourceMapsWithinTolerance(allocatable, ratioOpts.MaxAllocatableDifferenceRatio) {
-		klog.V(3).Infof("nodes %s and %s are not similar, allocatable resources not within tolerance", n1.Node().Name, n2.Node().Name)
 		return false
 	}
 	if !resourceMapsWithinTolerance(free, ratioOpts.MaxFreeDifferenceRatio) {
-		klog.V(3).Infof("nodes %s and %s are not similar, free resources not within tolerance", n1.Node().Name, n2.Node().Name)
 		return false
 	}
 
 	if !compareLabels(nodes, ignoredLabels) {
-		klog.V(3).Infof("nodes %s and %s are not similar, labels do not match", n1.Node().Name, n2.Node().Name)
 		return false
 	}
 

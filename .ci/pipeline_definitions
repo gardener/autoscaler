@@ -37,11 +37,11 @@ autoscaler:
                 username: 'elankath'
     steps:
       test:
-        image: 'golang:1.23.2'
+        image: 'golang:1.24.0'
       check:
-        image: 'golang:1.23.2'
+        image: 'golang:1.24.0'
       build:
-        image: 'golang:1.23.2'
+        image: 'golang:1.24.0'
         output_dir: 'binary'
   jobs:
     head-update:
@@ -144,9 +144,9 @@ vertical-pod-autoscaler:
             dir: 'vertical-pod-autoscaler'
     steps:
       test:
-        image: 'golang:1.23.2'
+        image: 'golang:1.24.0'
       build:
-        image: 'golang:1.23.2'
+        image: 'golang:1.24.0'
         output_dir: 'binary'
   jobs:
     release:
