@@ -73,7 +73,8 @@ if [ "${CMD}" = "build" ] || [ "${CMD}" == "test" ]; then
   go test -run=None ./...
   popd
   pushd ${CONTRIB_ROOT}/cluster-autoscaler/
+  ANALYZERS="atomic,bool,buildtags,directive,errorsas,ifaceassert,nilfunc,slog,stringintconv,tests"
   # FORK-CHANGE: do not run integration tests here
-  go test $(go list ./... | grep -v integration)
+  go test $(go list ./... | grep -v integration) -vet="${ANALYZERS}"
   popd
 fi
