@@ -3,7 +3,7 @@
 - [v1.33.0](#v1330)
     - [Synced with which upstream CA](#synced-with-which-upstream-ca)
     - [Changes made](#changes-made)
-        - [During vendoring k8s](#during-vendoring-k8s)
+        - [Changes during go.mod update](#changes-during-gomod-update)
         - [Others](#others)
 
 # v1.33.0
