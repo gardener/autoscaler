@@ -28,7 +28,7 @@
 - New `ScaleDownNoCandidates` status emitted instead of existing `ScaleDownInCooldown` when there are no candidates.
   `last_activity{activity=scaleDown}` metric will be updated even when there are no candidates.
 
-### During vendoring k8s
+### Changes during go.mod update
 - mcm v0.57.0 -> v0.59.0
 - mcm-provider-aws v0.23.0 -> v0.25.0
 - mcm-provider-azure v0.15.1 -> v0.16.0
