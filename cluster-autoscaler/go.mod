@@ -61,7 +61,7 @@ require (
 	k8s.io/dynamic-resource-allocation v0.0.0
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubelet v0.33.0
-	k8s.io/kubernetes v1.33.0
+	k8s.io/kubernetes v1.33.4
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	sigs.k8s.io/cloud-provider-azure v1.29.4
 	sigs.k8s.io/cloud-provider-azure/pkg/azclient v0.0.13
@@ -92,7 +92,7 @@ require (
 	github.com/GoogleCloudPlatform/k8s-cloud-provider v1.25.0 // indirect
 	github.com/JeffAshton/win_pdh v0.0.0-20161109143554-76bb4ee9f0ab // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/Microsoft/hnslib v0.0.8 // indirect
+	github.com/Microsoft/hnslib v0.1.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2 // indirect
