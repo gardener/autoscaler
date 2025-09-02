@@ -40,6 +40,10 @@ const (
 	LabelTopologyGKE = "topology.gke.io/zone"
 	// LabelTopologyDiskCSIAzure is a CSI-specific label for disk driver in Azure.
 	LabelTopologyDiskCSIAzure = "topology.disk.csi.azure.com/zone"
+	// LabelAWSZoneID indicates the zone-id of the node in AWS
+	LabelAWSZoneID = "topology.k8s.aws/zone-id"
+	// LabelMachineName adds the name of the machine to the node
+	LabelMachineName = "node.gardener.cloud/machine-name"
 )
 
 // BasicIgnoredLabels define a set of basic labels that should be ignored when comparing the similarity
@@ -62,6 +66,8 @@ var BasicIgnoredLabels = map[string]bool{
 	LabelTopologyEBSCSIAWS:    true,
 	LabelTopologyGKE:          true,
 	LabelTopologyDiskCSIAzure: true,
+	LabelAWSZoneID:            true,
+	LabelMachineName:          true,
 }
 
 // NodeInfoComparator is a function that tells if two nodes are from NodeGroups
