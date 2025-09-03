@@ -6,11 +6,12 @@ package mcm
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	appsv1 "k8s.io/api/apps/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
-	"testing"
-	"time"
 
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	"k8s.io/client-go/tools/cache"
@@ -239,30 +240,27 @@ func createMcmManager(
 		controlAppsObjectTracker,
 	)
 	fakeObjectTrackers.Start()
-	coreTargetInformerFactory := coreinformers.NewFilteredSharedInformerFactory(
+	coreTargetInformerFactory := coreinformers.NewSharedInformerFactoryWithOptions(
 		fakeTargetCoreClient,
 		100*time.Millisecond,
-		namespace,
-		nil,
+		coreinformers.WithNamespace(namespace),
 	)
 	defer coreTargetInformerFactory.Start(stop)
 	coreTargetSharedInformers := coreTargetInformerFactory.Core().V1()
 	nodes := coreTargetSharedInformers.Nodes()
 
-	appsControlInformerFactory := appsv1informers.NewFilteredSharedInformerFactory(
+	appsControlInformerFactory := appsv1informers.NewSharedInformerFactoryWithOptions(
 		fakeControlAppsClient,
 		100*time.Millisecond,
-		namespace,
-		nil,
+		appsv1informers.WithNamespace(namespace),
 	)
 	defer appsControlInformerFactory.Start(stop)
 	appsControlSharedInformers := appsControlInformerFactory.Apps().V1()
 
-	controlMachineInformerFactory := machineinformers.NewFilteredSharedInformerFactory(
+	controlMachineInformerFactory := machineinformers.NewSharedInformerFactoryWithOptions(
 		fakeControlMachineClient,
 		100*time.Millisecond,
-		namespace,
-		nil,
+		machineinformers.WithNamespace(namespace),
 	)
 	defer controlMachineInformerFactory.Start(stop)
 

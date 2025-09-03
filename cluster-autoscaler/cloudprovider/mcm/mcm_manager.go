@@ -217,7 +217,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 	}
 
 	controlAppsClient := controlClientBuilder.ClientOrDie("control-apps-client")
-	appsInformerFactory := appsinformers.NewFilteredSharedInformerFactory(controlAppsClient, *minResyncPeriod, namespace, nil)
+	appsInformerFactory := appsinformers.NewSharedInformerFactoryWithOptions(controlAppsClient, *minResyncPeriod, appsinformers.WithNamespace(namespace))
 	deploymentLister := appsInformerFactory.Apps().V1().Deployments().Lister()
 
 	if availableResources[machineGVR] && availableResources[machineSetGVR] && availableResources[machineDeploymentGVR] {
@@ -230,11 +230,10 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 		controlMachineClientBuilder := MachineControllerClientBuilder{
 			ClientConfig: controlKubeconfig,
 		}
-		controlMachineInformerFactory := machineinformers.NewFilteredSharedInformerFactory(
+		controlMachineInformerFactory := machineinformers.NewSharedInformerFactoryWithOptions(
 			controlMachineClientBuilder.ClientOrDie("control-machine-shared-informers"),
 			*minResyncPeriod,
-			namespace,
-			nil,
+			machineinformers.WithNamespace(namespace),
 		)
 
 		controlMachineClient := controlMachineClientBuilder.ClientOrDie("control-machine-client").MachineV1alpha1()
