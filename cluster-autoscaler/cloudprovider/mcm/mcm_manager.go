@@ -217,7 +217,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 	}
 
 	controlAppsClient := controlClientBuilder.ClientOrDie("control-apps-client")
-	appsInformerFactory := appsinformers.NewSharedInformerFactory(controlAppsClient, *minResyncPeriod)
+	appsInformerFactory := appsinformers.NewFilteredSharedInformerFactory(controlAppsClient, *minResyncPeriod, namespace, nil)
 	deploymentLister := appsInformerFactory.Apps().V1().Deployments().Lister()
 
 	if availableResources[machineGVR] && availableResources[machineSetGVR] && availableResources[machineDeploymentGVR] {
