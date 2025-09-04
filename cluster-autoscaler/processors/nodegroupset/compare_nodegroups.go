@@ -44,6 +44,14 @@ const (
 	LabelAWSZoneID = "topology.k8s.aws/zone-id"
 	// LabelMachineName adds the name of the machine to the node
 	LabelMachineName = "node.gardener.cloud/machine-name"
+	// LabelTopologyDiskPluginCSIAlibabaCloud is a CSI-specific label for disk plugin in Alibaba Cloud
+	LabelTopologyDiskPluginCSIAlibabaCloud = "topology.diskplugin.csi.alibabacloud"
+	// LabelECSInstanceID is the instance ID in Alibaba Cloud
+	LabelECSInstanceID = "alibabacloud.com/ecs-instance-id"
+	// LabelTopologyCinderCSIOpenStack is a CSI-specific label for cinder-driver in OpenStack
+	LabelTopologyCinderCSIOpenStack = "topology.cinder.csi.openstack.org/zone"
+	// LabelTopologyManilaCSIOpenStack is a CSI-specific label for manila-driver in OpenStack
+	LabelTopologyManilaCSIOpenStack = "topology.manila.csi.openstack.org/zone"
 )
 
 // BasicIgnoredLabels define a set of basic labels that should be ignored when comparing the similarity
@@ -62,12 +70,19 @@ var BasicIgnoredLabels = map[string]bool{
 	LabelWorkerPool:              false,
 	LabelWorkerPoolDeprecated:    false,
 	LabelWorkerKubernetesVersion: true,
+	LabelMachineName:             true,
+
 	// Ignore CSI specific labels.
-	LabelTopologyEBSCSIAWS:    true,
-	LabelTopologyGKE:          true,
-	LabelTopologyDiskCSIAzure: true,
-	LabelAWSZoneID:            true,
-	LabelMachineName:          true,
+	LabelTopologyEBSCSIAWS:                 true,
+	LabelTopologyGKE:                       true,
+	LabelTopologyDiskCSIAzure:              true,
+	LabelAWSZoneID:                         true,
+	LabelTopologyDiskPluginCSIAlibabaCloud: true,
+	LabelTopologyCinderCSIOpenStack:        true,
+	LabelTopologyManilaCSIOpenStack:        true,
+
+	// Ignore Alibaba Cloud instance-id
+	LabelECSInstanceID: true,
 }
 
 // NodeInfoComparator is a function that tells if two nodes are from NodeGroups
