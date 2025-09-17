@@ -34,16 +34,16 @@ const (
 	LabelWorkerPool = "worker.gardener.cloud/pool"
 	// LabelWorkerPoolDeprecated is a deprecated constant for a label that indicates the worker pool the node belongs to
 	LabelWorkerPoolDeprecated = "worker.garden.sapcloud.io/group"
+	// LabelMachineName adds the name of the machine to the node
+	LabelMachineName = "node.gardener.cloud/machine-name"
 	// LabelTopologyEBSCSIAWS is a CSI-specific label for ebs-driver in AWS.
 	LabelTopologyEBSCSIAWS = "topology.ebs.csi.aws.com/zone"
 	// LabelTopologyGKE is a CSI-specific label for persistent disk driver in GCP.
 	LabelTopologyGKE = "topology.gke.io/zone"
 	// LabelTopologyDiskCSIAzure is a CSI-specific label for disk driver in Azure.
 	LabelTopologyDiskCSIAzure = "topology.disk.csi.azure.com/zone"
-	// LabelAWSZoneID indicates the zone-id of the node in AWS
-	LabelAWSZoneID = "topology.k8s.aws/zone-id"
-	// LabelMachineName adds the name of the machine to the node
-	LabelMachineName = "node.gardener.cloud/machine-name"
+	// LabelTopologyAWSZoneID indicates the zone-id of the node in AWS
+	LabelTopologyAWSZoneID = "topology.k8s.aws/zone-id"
 	// LabelTopologyDiskPluginCSIAlibabaCloud is a CSI-specific label for disk plugin in Alibaba Cloud
 	LabelTopologyDiskPluginCSIAlibabaCloud = "topology.diskplugin.csi.alibabacloud"
 	// LabelECSInstanceID is the instance ID in Alibaba Cloud
@@ -76,7 +76,7 @@ var BasicIgnoredLabels = map[string]bool{
 	LabelTopologyEBSCSIAWS:                 true,
 	LabelTopologyGKE:                       true,
 	LabelTopologyDiskCSIAzure:              true,
-	LabelAWSZoneID:                         true,
+	LabelTopologyAWSZoneID:                 true,
 	LabelTopologyDiskPluginCSIAlibabaCloud: true,
 	LabelTopologyCinderCSIOpenStack:        true,
 	LabelTopologyManilaCSIOpenStack:        true,
