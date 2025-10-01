@@ -18,12 +18,6 @@ In order to override URL, token or clustername use following environment variabl
  - RANCHER_TOKEN
  - RANCHER_CLUSTER_NAME
 
-### Configuration via environment variables
-In order to override URL, token or clustername use following environment variables:
- - RANCHER_URL
- - RANCHER_TOKEN
- - RANCHER_CLUSTER_NAME
-
 ### Permissions
 
 The Rancher server account provided in the `cloud-config` requires the

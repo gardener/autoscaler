@@ -23,6 +23,7 @@ You should also take a look at the notes and "gotchas" for your specific cloud p
 * [Civo](./cloudprovider/civo/README.md)
 * [CloudStack](./cloudprovider/cloudstack/README.md)
 * [ClusterAPI](./cloudprovider/clusterapi/README.md)
+* [CoreWeave](./cloudprovider/coreweave/README.md)
 * [DigitalOcean](./cloudprovider/digitalocean/README.md)
 * [Exoscale](./cloudprovider/exoscale/README.md)
 * [Equinix Metal](cloudprovider/equinixmetal/README.md#notes)
@@ -40,6 +41,7 @@ You should also take a look at the notes and "gotchas" for your specific cloud p
 * [Scaleway](./cloudprovider/scaleway/README.md)
 * [TencentCloud](./cloudprovider/tencentcloud/README.md)
 * [Vultr](./cloudprovider/vultr/README.md)
+* [Utho](./cloudprovider/utho/README.md)
 
 # Releases
 
@@ -49,6 +51,7 @@ Starting from Kubernetes 1.12, versioning scheme was changed to match Kubernetes
 
 | Kubernetes Version | CA Version               | Chart Version |
 |--------------------|--------------------------|---------------|
+| 1.33.x             | 1.33.x                   |9.47.0+|
 | 1.32.x             | 1.32.x                   |9.45.0+|
 | 1.31.x             | 1.31.x                   |9.38.0+|
 | 1.30.x             | 1.30.x                   |9.37.0+|
@@ -109,6 +112,7 @@ Starting with Gardener/Autoscaler v1.20, versioning scheme has changed to match 
 
 | Kubernetes Version | CA Version | Gardener CA Version | 
 |--------------------|------------|---------------------|
+| 1.34.X             | 1.34.X     | 1.34.X              |
 | 1.33.X             | 1.33.X     | 1.33.X              |
 | 1.32.X             | 1.32.X     | 1.32.X              |
 | 1.31.X             | 1.31.X     | 1.31.X              |
@@ -257,3 +261,4 @@ Supported cloud providers:
 * Scaleway https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/scaleway/README.md
 * TencentCloud https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/tencentcloud/README.md
 * Vultr https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/vultr/README.md
+* Utho https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/utho/README.md

@@ -17,6 +17,7 @@ limitations under the License.
 package nodegroupset
 
 import (
+	"fmt"
 	"math"
 
 	apiv1 "k8s.io/api/core/v1"
@@ -24,6 +25,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/config"
 	"k8s.io/autoscaler/cluster-autoscaler/simulator/framework"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/scheduler"
+	klog "k8s.io/klog/v2"
 )
 
 // FORK-CHANGE: labels for gardener
@@ -159,7 +161,7 @@ func IsCloudProviderNodeInfoSimilar(
 		for res, quantity := range node.Node().Status.Allocatable {
 			allocatable[res] = append(allocatable[res], quantity)
 		}
-		for res, quantity := range scheduler.ResourceToResourceList(node.ToScheduler().Requested) {
+		for res, quantity := range scheduler.ResourceToResourceList(node.ToScheduler().GetRequested()) {
 			freeRes := node.Node().Status.Allocatable[res].DeepCopy()
 			freeRes.Sub(quantity)
 			free[res] = append(free[res], freeRes)
@@ -168,11 +170,13 @@ func IsCloudProviderNodeInfoSimilar(
 
 	for kind, qtyList := range capacity {
 		if len(qtyList) != 2 {
+			dissimilarNodesLog(n1.Node().Name, n2.Node().Name, fmt.Sprintf("missing capacity %q", kind))
 			return false
 		}
 		switch kind {
 		case apiv1.ResourceMemory:
 			if !resourceListWithinTolerance(qtyList, ratioOpts.MaxCapacityMemoryDifferenceRatio) {
+				dissimilarNodesLog(n1.Node().Name, n2.Node().Name, "memory not within tolerance")
 				return false
 			}
 		default:
@@ -180,6 +184,7 @@ func IsCloudProviderNodeInfoSimilar(
 			// If this is ever changed, enforcing MaxCoresTotal limits
 			// as it is now may no longer work.
 			if qtyList[0].Cmp(qtyList[1]) != 0 {
+				dissimilarNodesLog(n1.Node().Name, n2.Node().Name, fmt.Sprintf("capacity resource %q does not match", kind))
 				return false
 			}
 		}
@@ -187,15 +192,22 @@ func IsCloudProviderNodeInfoSimilar(
 
 	// For allocatable and free we allow resource quantities to be within a few % of each other
 	if !resourceMapsWithinTolerance(allocatable, ratioOpts.MaxAllocatableDifferenceRatio) {
+		dissimilarNodesLog(n1.Node().Name, n2.Node().Name, "allocatable resources not within tolerance")
 		return false
 	}
 	if !resourceMapsWithinTolerance(free, ratioOpts.MaxFreeDifferenceRatio) {
+		dissimilarNodesLog(n1.Node().Name, n2.Node().Name, "free resources not within tolerance")
 		return false
 	}
 
 	if !compareLabels(nodes, ignoredLabels) {
+		dissimilarNodesLog(n1.Node().Name, n2.Node().Name, "labels do not match")
 		return false
 	}
 
 	return true
+}
+
+func dissimilarNodesLog(node1, node2, message string) {
+	klog.V(5).Infof("nodes %q and %q are not similar, %s", node1, node2, message)
 }

@@ -89,6 +89,8 @@ type ScaleSet struct {
 	dedicatedHost bool
 
 	enableFastDeleteOnFailedProvisioning bool
+
+	enableLabelPredictionsOnTemplate bool
 }
 
 // NewScaleSet creates a new NewScaleSet.
@@ -108,10 +110,11 @@ func NewScaleSet(spec *dynamic.NodeGroupSpec, az *AzureManager, curSize int64, d
 			instancesRefreshJitter: az.config.VmssVmsCacheJitter,
 		},
 
-		enableForceDelete:         az.config.EnableForceDelete,
-		enableDynamicInstanceList: az.config.EnableDynamicInstanceList,
-		enableDetailedCSEMessage:  az.config.EnableDetailedCSEMessage,
-		dedicatedHost:             dedicatedHost,
+		enableForceDelete:                az.config.EnableForceDelete,
+		enableDynamicInstanceList:        az.config.EnableDynamicInstanceList,
+		enableDetailedCSEMessage:         az.config.EnableDetailedCSEMessage,
+		enableLabelPredictionsOnTemplate: az.config.EnableLabelPredictionsOnTemplate,
+		dedicatedHost:                    dedicatedHost,
 	}
 
 	if az.config.VmssVirtualMachinesCacheTTLInSeconds != 0 {
@@ -586,7 +589,7 @@ func (scaleSet *ScaleSet) waitForDeleteInstances(future *azure.Future, requiredI
 
 // DeleteNodes deletes the nodes from the group.
 func (scaleSet *ScaleSet) DeleteNodes(nodes []*apiv1.Node) error {
-	klog.V(8).Infof("Delete nodes requested: %q\n", nodes)
+	klog.V(3).Infof("Delete nodes requested: %q\n", nodes)
 	size, err := scaleSet.getScaleSetSize()
 	if err != nil {
 		return err
@@ -595,8 +598,12 @@ func (scaleSet *ScaleSet) DeleteNodes(nodes []*apiv1.Node) error {
 	if int(size) <= scaleSet.MinSize() {
 		return fmt.Errorf("min size reached, nodes will not be deleted")
 	}
+	return scaleSet.ForceDeleteNodes(nodes)
+}
 
-	// Distinguish between unregistered node deletion and normal node deletion
+// ForceDeleteNodes deletes nodes from the group regardless of constraints.
+func (scaleSet *ScaleSet) ForceDeleteNodes(nodes []*apiv1.Node) error {
+	klog.V(3).Infof("Delete nodes requested: %q\n", nodes)
 	refs := make([]*azureRef, 0, len(nodes))
 	hasUnregisteredNodes := false
 	unregisteredRefs := make([]*azureRef, 0, len(nodes))
@@ -634,11 +641,6 @@ func (scaleSet *ScaleSet) DeleteNodes(nodes []*apiv1.Node) error {
 	return scaleSet.DeleteInstances(refs, hasUnregisteredNodes)
 }
 
-// ForceDeleteNodes deletes nodes from the group regardless of constraints.
-func (scaleSet *ScaleSet) ForceDeleteNodes(nodes []*apiv1.Node) error {
-	return cloudprovider.ErrNotImplemented
-}
-
 // Id returns ScaleSet id.
 func (scaleSet *ScaleSet) Id() string {
 	return scaleSet.Name
@@ -662,7 +664,7 @@ func (scaleSet *ScaleSet) TemplateNodeInfo() (*framework.NodeInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	node, err := buildNodeFromTemplate(scaleSet.Name, template, scaleSet.manager, scaleSet.enableDynamicInstanceList)
+	node, err := buildNodeFromTemplate(scaleSet.Name, template, scaleSet.manager, scaleSet.enableDynamicInstanceList, scaleSet.enableLabelPredictionsOnTemplate)
 	if err != nil {
 		return nil, err
 	}
