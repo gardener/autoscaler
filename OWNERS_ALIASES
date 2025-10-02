@@ -1,6 +1,23 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
 aliases:
-  sig-autoscaling-leads:
-    - gjtempleton
-    - jackfrancis
-    - raywainman
-    - towca
+  autoscaler-reviewers:
+  - ashwani2k
+  - unmarshall
+  - voelzmo
+  - elankath
+  - plkokanov
+  - shreyas-s-rao
+  - aaronfern
+  - thiyyakat
+  - takoverflow
+  autoscaler-approvers:
+  - ashwani2k
+  - unmarshall
+  - voelzmo
+  - elankath
+  - plkokanov
+  - shreyas-s-rao
+  - aaronfern
+  - thiyyakat
+  - takoverflow
