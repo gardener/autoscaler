@@ -1,8 +1,6 @@
-approvers:
-- sig-autoscaling-leads
+# See the OWNERS docs at https://go.k8s.io/owners
+
 reviewers:
-- sig-autoscaling-leads
-emeritus_approvers:
-- bskiba # 2022-09-30
-- mwielgus
-- maciekpytel
+- autoscaler-reviewers
+approvers:
+- autoscaler-approvers
