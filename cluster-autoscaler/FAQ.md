@@ -1544,6 +1544,7 @@ Assumption: We assume that the developer executing the below stages wants to syn
     1. Follow instructions at: [IT Usage Guide](./integration/usage.md)
     1. This target will print out a list of shell variable `EXPORT` statements. Copy-paste the printed shell commands and execute them
     1. Now run `make test-integration`
+1. Run sast: `make sast`
 
 #### Stage E: Finalization
 1. Update the [Release Matrix Table](https://github.com/gardener/autoscaler/tree/machine-controller-manager-provider/cluster-autoscaler#releases-gardenerautoscaler)

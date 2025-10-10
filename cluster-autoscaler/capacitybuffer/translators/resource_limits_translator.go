@@ -92,9 +92,9 @@ func limitNumberOfPodsForResource(podTemplate *corev1.PodTemplate, limits api_v1
 				continue
 			}
 			if maximumNumberOfPods == nil {
-				maximumNumberOfPods = pointerToInt32(int32(maxPods))
+				maximumNumberOfPods = pointerToInt32(int32(maxPods)) // #nosec - G115 (CWE-190) -- code inherited from upstream
 			} else {
-				maximumNumberOfPods = pointerToInt32(int32(min(*maximumNumberOfPods, int32(maxPods))))
+				maximumNumberOfPods = pointerToInt32(int32(min(*maximumNumberOfPods, int32(maxPods)))) // #nosec - G115 (CWE-190) -- code inherited from upstream
 			}
 		}
 	}

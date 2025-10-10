@@ -301,7 +301,7 @@ func (n *NodeGroup) TemplateNodeInfo() (*framework.NodeInfo, error) {
 	w := n.nodePool.Workers[0]
 
 	// Build a synthetic *v1.Node
-	name := fmt.Sprintf("%s-template-%d", n.id, rand.Int63())
+	name := fmt.Sprintf("%s-template-%d", n.id, rand.Int63()) // #nosec - G404 (CWE-338) -- not being used for crytography
 	node := &apiv1.Node{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
