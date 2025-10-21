@@ -135,7 +135,7 @@ func CalculateUtilizationOfResource(nodeInfo *framework.NodeInfo, resourceName a
 		if skipMirrorPods && podutils.IsMirrorPod(podInfo.Pod) {
 			daemonSetAndMirrorPodsUtilization.Add(resourceValue)
 			if detailedPodCount < maxDiagnosticPods {
-				fmt.Fprintf(&diagBuff, "pod %s/%s is a miror pod. Adding resource %q, value %v to daemonSetAndMirrorPodsUtilization\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceName, resourceValue)
+				fmt.Fprintf(&diagBuff, "pod %s/%s is a mirror pod. Adding resource %q, value %v to daemonSetAndMirrorPodsUtilization\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceName, resourceValue)
 				detailedPodCount++
 			}
 			continue
@@ -152,7 +152,7 @@ func CalculateUtilizationOfResource(nodeInfo *framework.NodeInfo, resourceName a
 
 		podsRequest.Add(resourceValue)
 		if detailedPodCount < maxDiagnosticPods {
-			fmt.Fprintf(&diagBuff, "pod %s/%s has requests %v\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceValue)
+			fmt.Fprintf(&diagBuff, "pod %s/%s has requests %v for resource %q\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceValue, resourceName)
 			detailedPodCount++
 		}
 	}
