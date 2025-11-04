@@ -18,6 +18,7 @@ package utilization
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
@@ -106,28 +107,61 @@ func CalculateUtilizationOfResource(nodeInfo *framework.NodeInfo, resourceName a
 	// the same with the Mirror pod.
 	podsRequest := resource.MustParse("0")
 	daemonSetAndMirrorPodsUtilization := resource.MustParse("0")
+	// FORK-CHANGE: following variables added for diagnostic logs
+	// diagBuff - buffer to collect diagnostic logs
+	// maxDiagnosticPods - maximum number of pods to log details for
+	// podCount - total number of pods processed
+	// detailedPodCount - number of pods with details logged
+	var diagBuff strings.Builder
+	const maxDiagnosticPods = 20
+	podCount := 0
+	detailedPodCount := 0
 	for _, podInfo := range nodeInfo.Pods() {
+		podCount++
 		podRequests := podutils.PodRequests(podInfo.Pod)
 		resourceValue := podRequests[resourceName]
 
 		// factor daemonset pods out of the utilization calculations
 		if skipDaemonSetPods && podutils.IsDaemonSetPod(podInfo.Pod) {
 			daemonSetAndMirrorPodsUtilization.Add(resourceValue)
+			if detailedPodCount < maxDiagnosticPods {
+				fmt.Fprintf(&diagBuff, "pod %s/%s is a daemonset pod. Adding resource %q, value %v to daemonSetAndMirrorPodsUtilization\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceName, resourceValue)
+				detailedPodCount++
+			}
 			continue
 		}
 
 		// factor mirror pods out of the utilization calculations
 		if skipMirrorPods && podutils.IsMirrorPod(podInfo.Pod) {
 			daemonSetAndMirrorPodsUtilization.Add(resourceValue)
+			if detailedPodCount < maxDiagnosticPods {
+				fmt.Fprintf(&diagBuff, "pod %s/%s is a mirror pod. Adding resource %q, value %v to daemonSetAndMirrorPodsUtilization\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceName, resourceValue)
+				detailedPodCount++
+			}
 			continue
 		}
 
 		// ignore Pods that should be terminated
 		if drain.IsPodLongTerminating(podInfo.Pod, currentTime) {
+			if detailedPodCount < maxDiagnosticPods {
+				fmt.Fprintf(&diagBuff, "pod %s/%s is terminating.\n", podInfo.Pod.Namespace, podInfo.Pod.Name)
+				detailedPodCount++
+			}
 			continue
 		}
 
 		podsRequest.Add(resourceValue)
+		if detailedPodCount < maxDiagnosticPods {
+			fmt.Fprintf(&diagBuff, "pod %s/%s has requests %v for resource %q\n", podInfo.Pod.Namespace, podInfo.Pod.Name, resourceValue, resourceName)
+			detailedPodCount++
+		}
+	}
+
+	if podCount > maxDiagnosticPods {
+		fmt.Fprintf(&diagBuff, "... plus %d more pods (details omitted)\n", podCount-maxDiagnosticPods)
+	}
+	if podsRequest.MilliValue() == 0 {
+		klog.Warningf("Diagnostic 0 pod requests for node %s:\n%s\n", nodeInfo.Node().Name, diagBuff.String())
 	}
 
 	return float64(podsRequest.MilliValue()) / float64(nodeAllocatable.MilliValue()-daemonSetAndMirrorPodsUtilization.MilliValue()), nil
