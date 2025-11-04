@@ -24,7 +24,7 @@
     - Updater: updates buffer status via capacity buffer client.
     - Controller: initiates the needed components and contains the reconciliation loops.
 - Changed the internal name for the annotation config to fromNodeAnnotationKey to match the same format as fromNodeLabelKey.
-- Deprecated ProvisioningRequest v1beta1.
+- Deprecated `ProvisioningRequest v1beta1`.
 
 ### Changes during go.mod update
 - mcm v0.59.0 -> v0.60.0
