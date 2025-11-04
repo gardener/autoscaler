@@ -13,7 +13,7 @@
 
 ## Changes made
 - See general release notes of 1.34.0: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.34.0
-- Binpacking simulator will now consider old nodes when trying to pack pods with topology spread contraints in order to avoid unnecessary scale ups.
+- Binpacking simulator will now consider old nodes when trying to pack pods with topology spread constraints in order to avoid unnecessary scale ups.
 - Default value for `--cordon-node-before-terminating` changed to `True`.
 - New field `KeepPartiallyFailedZeroOrMaxScalingNodeGroups` added to `NodeGroupAutoScalingOptions` to prevent nodes from the node-groups being deleted if they have creation errors i.e. the node-group is left unmodified unless all their nodes fail.
 - Extends Helm charts with support for configuring `dnsConfig`.
