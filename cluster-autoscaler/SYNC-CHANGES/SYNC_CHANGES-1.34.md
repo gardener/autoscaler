@@ -15,15 +15,10 @@
 - See general release notes of 1.34.0: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.34.0
 - Binpacking simulator will now consider old nodes when trying to pack pods with topology spread constraints in order to avoid unnecessary scale ups.
 - Default value for `--cordon-node-before-terminating` changed to `True`.
+- Introducing `--force-delete-failed-nodes` to force delete nodes with errors. This prevents CA from entering in error loop if scale up fails when node group is below its min size.
 - New field `KeepPartiallyFailedZeroOrMaxScalingNodeGroups` added to `NodeGroupAutoScalingOptions` to prevent nodes from the node-groups being deleted if they have creation errors i.e. the node-group is left unmodified unless all their nodes fail.
 - Extends Helm charts with support for configuring `dnsConfig`.
-- New CRD `CapacityBuffer` added which defines spare capacity per workload or set workloads. This is intended to allow users to express the need for spare capacity in the cluster.
-- Added CapacityBuffer controller loop along with the main needed skeleton for buffers with podTemplateRef.
-    - Filters: CapacityBuffers provisioning strategy and status filtering.
-    - Translators: podTemplateRef translator that updates buffer status accordingly.
-    - Updater: updates buffer status via capacity buffer client.
-    - Controller: initiates the needed components and contains the reconciliation loops.
-- Changed the internal name for the annotation config to fromNodeAnnotationKey to match the same format as fromNodeLabelKey.
+- New CRD `CapacityBuffer` added which defines spare capacity per workload or set workloads. This is intended to allow users to express the need for spare capacity in the cluster. Additional details for the changes can be found [here](https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-1.34.0/cluster-autoscaler/proposals/buffers.md)
 - Deprecated `ProvisioningRequest v1beta1`.
 
 ### Changes during go.mod update

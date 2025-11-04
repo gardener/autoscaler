@@ -606,8 +606,6 @@ func (scaleSet *ScaleSet) ForceDeleteNodes(nodes []*apiv1.Node) error {
 	klog.V(3).Infof("Delete nodes requested: %q\n", nodes)
 	refs := make([]*azureRef, 0, len(nodes))
 	hasUnregisteredNodes := false
-	unregisteredRefs := make([]*azureRef, 0, len(nodes))
-
 	for _, node := range nodes {
 		belongs, err := scaleSet.Belongs(node)
 		if err != nil {
@@ -624,18 +622,7 @@ func (scaleSet *ScaleSet) ForceDeleteNodes(nodes []*apiv1.Node) error {
 		ref := &azureRef{
 			Name: node.Spec.ProviderID,
 		}
-
-		if node.Annotations[cloudprovider.FakeNodeReasonAnnotation] == cloudprovider.FakeNodeUnregistered {
-			klog.V(5).Infof("Node: %s type is unregistered..Appending to the unregistered list", node.Name)
-			unregisteredRefs = append(unregisteredRefs, ref)
-		} else {
-			refs = append(refs, ref)
-		}
-	}
-
-	if len(unregisteredRefs) > 0 {
-		klog.V(3).Infof("Removing unregisteredNodes: %v", unregisteredRefs)
-		return scaleSet.DeleteInstances(unregisteredRefs, true)
+		refs = append(refs, ref)
 	}
 
 	return scaleSet.DeleteInstances(refs, hasUnregisteredNodes)
