@@ -15,7 +15,7 @@
 - See general release notes of 1.34.0: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.34.0
 - Binpacking simulator will now consider old nodes when trying to pack pods with topology spread contraints in order to avoid unnecessary scale ups.
 - Default value for `--cordon-node-before-terminating` changed to `True`.
-- The KeepPartiallyFailedZeroOrMaxScalingNodeGroups field has been added to NodeGroupAutoScalingOptions to not allow nodes from the node-groups to be deleted if any node has creation errors i.e. the node-group is left unmodified unless all their nodes fail.
+- New field `KeepPartiallyFailedZeroOrMaxScalingNodeGroups` added to `NodeGroupAutoScalingOptions` to prevent nodes from the node-groups being deleted if they have creation errors i.e. the node-group is left unmodified unless all their nodes fail.
 - Adds Helm chart support for configuring dnsConfig. When dnsConfig is provided, it gets set for the Deployment Pod template spec. Also, backward compatibility is preserved; there are no template changes with default values.
 - In order to allow users to express the need for spare capacity in the cluster a new kubernetes object will be introduced called a CapacityBuffer, which will define spare capacity per workload or set workloads. Configuration would be translated to pod specs that could be injected in memory by autoscaler to drive scaling decisions for the cluster.
 - Added CapacityBuffer controller loop along with the main needed skeleton for buffers with podTemplateRef.
