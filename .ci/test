@@ -7,6 +7,22 @@
 set -e
 
 ##############################################################################
+echo "=== Overall Filesystem Usage (df -h) ==="
+df -h
+
+echo
+echo "=== Top-Level Directory Usage (/) ==="
+sudo du -h --max-depth=1 / | sort -hr
+
+echo
+echo "=== Depth-2 Directory Usage ==="
+du -h --max-depth=1 / | sort -hr
+
+echo
+echo "=== Runner Workspace Usage ==="
+du -h --max-depth=2 "$GITHUB_WORKSPACE" | sort -hr
+
+echo "=== Running cluster-autoscaler unit-tests..."
 
 cd cluster-autoscaler
 go test $(go list ./... | grep -v cloudprovider | grep -v integration)
