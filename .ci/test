@@ -20,7 +20,7 @@ for d in $LARGEST; do
 done
 
 echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
-du -h --max-depth=2 "$GITHUB_WORKSPACE" | sort -hr
+du -h --max-depth=1 "$GITHUB_WORKSPACE" | sort -hr
 
 echo "=== Running cluster-autoscaler unit-tests..."
 
