@@ -18,6 +18,24 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+echo "=== disk-free ==="
+df -h
+
+echo "=== disk-usage Level 1 ==="
+sudo du -xh --max-depth=0 / | sort -hr
+
+echo ""
+echo "=== disk-usage Level 2 ==="
+LARGEST=$(sudo du -xh --exclude=/proc  --max-depth=1 / | sort -hr | head -5 | awk '{print $2}')
+for d in $LARGEST; do
+  echo ""
+  echo "--- $d ---"
+  sudo du -xh --exclude=/proc --max-depth=1 "$d" | sort -hr
+done
+
+echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
+du -h --max-depth=1 "$GITHUB_WORKSPACE" | sort -hr
+
 KUBE_ROOT=$(dirname "${BASH_SOURCE}")/..
 source "${KUBE_ROOT}/hack/kube-env.sh"
 
