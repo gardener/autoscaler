@@ -20,12 +20,12 @@ jobs:
           path: ${{ env.GOPATH }}/src/k8s.io/autoscaler
 
       # Maximize disk space BEFORE any installs or builds
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: "true"
+      # - name: Maximize build space
+      #   uses: easimon/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 512
+      #     swap-size-mb: 1024
+      #     remove-dotnet: "true"
 
       - name: Set up Go
         uses: actions/setup-go@v5.5.0
