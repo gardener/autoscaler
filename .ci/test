@@ -7,15 +7,15 @@
 set -e
 
 ##############################################################################
-echo "=== disk-usage Level 1 ==="
-sudo du -xh --exclude=/proc --max-depth=1 / | sort -hr
+echo "=== disk-usage for /usr Level 2 ==="
+sudo du -xh --exclude=/proc --max-depth=2 / | sort -hr
 
 echo "=== Deleting un-needed framework/tool dirs ==="
 
-rm -rf /usr/local/.ghcup # haskell installer: ~6.4GB
-rm -rf /usr/share/dotnet # dotnet: ~4GB
-rm -rf /usr/share/swift # swift: ~3.2GB
-rm -rf /usr/lib/jvm # jvm: ~1.5GB
+sudo rm -rf /usr/local/.ghcup || true # haskell installer: ~6.4GB
+sudo rm -rf /usr/share/dotnet || true # dotnet: ~4GB
+sudo rm -rf /usr/share/swift  || true # swift: ~3.2GB
+sudo rm -rf /usr/lib/jvm || true      # jvm: ~1.5GB
 
 
 echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
