@@ -18,22 +18,6 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-echo "=== Overall Filesystem Usage (df -h) ==="
-df -h
-
-echo
-echo "=== Top-Level Directory Usage (/) ==="
-sudo du -h --max-depth=1 / | sort -hr
-
-echo
-echo "=== Depth-2 Directory Usage ==="
-du -h --max-depth=1 / | sort -hr
-
-echo
-echo "=== Runner Workspace Usage ==="
-du -h --max-depth=2 "$GITHUB_WORKSPACE" | sort -hr
-
-
 CONTRIB_ROOT="$(dirname ${BASH_SOURCE})/.."
 PROJECT_NAMES=(addon-resizer vertical-pod-autoscaler)
 
