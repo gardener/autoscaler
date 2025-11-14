@@ -8,16 +8,15 @@ set -e
 
 ##############################################################################
 echo "=== disk-usage Level 1 ==="
-sudo du -xh --max-depth=0 / | sort -hr
+sudo du -xh --exclude=/proc --max-depth=1 / | sort -hr
 
-echo ""
-echo "=== disk-usage Level 2 ==="
-LARGEST=$(sudo du -xh --exclude=/proc  --max-depth=1 / | sort -hr | head -3 | awk '{print $2}')
-for d in $LARGEST; do
-  echo ""
-  echo "--- $d ---"
-  sudo du -xh --exclude=/proc --max-depth=2 "$d" | sort -hr
-done
+echo "=== Deleting un-needed framework/tool dirs ==="
+
+rm -rf /usr/local/.ghcup # haskell installer: ~6.4GB
+rm -rf /usr/share/dotnet # dotnet: ~4GB
+rm -rf /usr/share/swift # swift: ~3.2GB
+rm -rf /usr/lib/jvm # jvm: ~1.5GB
+
 
 echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
 du -h --max-depth=1 "$GITHUB_WORKSPACE" | sort -hr
