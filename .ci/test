@@ -8,8 +8,8 @@ set -e
 
 ##############################################################################
 if [ "$GITHUB_ACTIONS" = "true" ]; then
-    echo "=== disk-usage for /usr Level 2 ==="
-    sudo du -xh --exclude=/proc --max-depth=2 / | sort -hr
+    # echo "=== disk-usage for /usr Level 2 ==="
+    # sudo du -xh --exclude=/proc --max-depth=2 / | sort -hr
 
     echo "=== Deleting un-needed framework/tool dirs ==="
 
@@ -18,8 +18,8 @@ if [ "$GITHUB_ACTIONS" = "true" ]; then
     sudo rm -rf /usr/share/swift  || true # swift: ~3.2GB
     sudo rm -rf /usr/lib/jvm || true      # jvm: ~1.5GB
 
-    echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
-    du -h --max-depth=1 "$GITHUB_WORKSPACE" | sort -hr
+    # echo "=== Github Workspace Usage for $GITHUB_WORKSPACE ==="
+    # du -h --max-depth=1 "$GITHUB_WORKSPACE" | sort -hr
 fi
 
 echo "=== Running cluster-autoscaler unit-tests..."

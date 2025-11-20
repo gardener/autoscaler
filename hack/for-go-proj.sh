@@ -18,12 +18,14 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-echo "=== Deleting un-needed framework/tool dirs ==="
+if [ "$GITHUB_ACTIONS" = "true" ]; then
+    echo "=== Deleting un-needed framework/tool dirs ==="
 
-sudo rm -rf /usr/local/.ghcup || true # haskell installer: ~6.4GB
-sudo rm -rf /usr/share/dotnet || true # dotnet: ~4GB
-sudo rm -rf /usr/share/swift  || true # swift: ~3.2GB
-sudo rm -rf /usr/lib/jvm || true      # jvm: ~1.5GB
+    sudo rm -rf /usr/local/.ghcup || true # haskell installer: ~6.4GB
+    sudo rm -rf /usr/share/dotnet || true # dotnet: ~4GB
+    sudo rm -rf /usr/share/swift  || true # swift: ~3.2GB
+    sudo rm -rf /usr/lib/jvm || true      # jvm: ~1.5GB
+fi
 
 CONTRIB_ROOT="$(dirname ${BASH_SOURCE})/.."
 PROJECT_NAMES=(addon-resizer vertical-pod-autoscaler)
