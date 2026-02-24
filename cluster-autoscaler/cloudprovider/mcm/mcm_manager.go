@@ -740,9 +740,17 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(nodeGroupName string) (*no
 				}
 			} else {
 				klog.V(1).Infof("Generating node template only using nodeTemplate from MachineClass %s: template resources-> cpu: %s,memory: %s", machineClass.Name, nodeTemplateAttributes.Capacity.Cpu().String(), nodeTemplateAttributes.Capacity.Memory().String())
-				extendedResources := removeKnownResources(nodeTemplateAttributes.Capacity)
+				var extendedResources apiv1.ResourceList
+				if len(nodeTemplateAttributes.Capacity) > 0 {
+					maps.Copy(extendedResources, nodeTemplateAttributes.Capacity)
+					extendedResources = removeKnownResources(extendedResources)
+					if len(extendedResources) > 0 {
+						klog.V(3).Infof("nodeTemplate from MachineClass %q added Capacity to ExtendedResources: %v", machineClass.Name, extendedResources)
+					}
+				}
 				if len(nodeTemplateAttributes.VirtualCapacity) > 0 {
 					maps.Copy(extendedResources, nodeTemplateAttributes.VirtualCapacity)
+					extendedResources = removeKnownResources(extendedResources)
 					if len(extendedResources) > 0 {
 						klog.V(3).Infof("nodeTemplate from MachineClass %q added VirtualCapacity to ExtendedResources: %v", machineClass.Name, extendedResources)
 					}
