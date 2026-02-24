@@ -743,7 +743,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(nodeGroupName string) (*no
 				if len(nodeTemplateAttributes.VirtualCapacity) > 0 {
 					maps.Copy(extendedResources, nodeTemplateAttributes.VirtualCapacity)
 					if len(extendedResources) > 0 {
-						klog.V(2).Infof("nodeTemplate from MachineClass %q added VirtualCapacity to ExtendedResources: %q", machineClass.Name, extendedResources)
+						klog.V(3).Infof("nodeTemplate from MachineClass %q added VirtualCapacity to ExtendedResources: %v", machineClass.Name, extendedResources)
 					}
 				}
 				instance = instanceType{
