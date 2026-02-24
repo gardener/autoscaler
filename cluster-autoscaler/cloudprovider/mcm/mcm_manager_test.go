@@ -207,7 +207,7 @@ func TestBuildNodeFromTemplate(t *testing.T) {
 	}
 }
 
-func TestFilterExtendedResources(t *testing.T) {
+func TestRemoveKnownResources(t *testing.T) {
 	resources := make(apiv1.ResourceList)
 	for _, n := range knownResourceNames {
 		resources[n] = *resource.NewQuantity(rand.Int64(), resource.DecimalSI)
@@ -219,8 +219,8 @@ func TestFilterExtendedResources(t *testing.T) {
 	allResources := resources.DeepCopy()
 	maps.Copy(allResources, customResources)
 
-	extendedResources := filterExtendedResources(allResources)
-	t.Logf("TestFilterExtendedResources obtained: %+v", extendedResources)
+	extendedResources := removeKnownResources(allResources)
+	t.Logf("TestRemoveKnownResources obtained: %+v", extendedResources)
 	assert.Equal(t, customResources, extendedResources)
 }
 

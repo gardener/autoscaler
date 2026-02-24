@@ -728,7 +728,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(nodeGroupName string) (*no
 				klog.V(1).Infof("Nodes already existing in the worker pool %s", workerPool)
 				baseNode := filteredNodes[0]
 				klog.V(1).Infof("Worker pool node used to form template is %s and its capacity is cpu: %s, memory:%s", baseNode.Name, baseNode.Status.Capacity.Cpu().String(), baseNode.Status.Capacity.Memory().String())
-				extendedResources := filterExtendedResources(baseNode.Status.Capacity)
+				extendedResources := removeKnownResources(baseNode.Status.Capacity)
 				instance = instanceType{
 					VCPU:              baseNode.Status.Capacity[apiv1.ResourceCPU],
 					Memory:            baseNode.Status.Capacity[apiv1.ResourceMemory],
@@ -739,7 +739,13 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(nodeGroupName string) (*no
 				}
 			} else {
 				klog.V(1).Infof("Generating node template only using nodeTemplate from MachineClass %s: template resources-> cpu: %s,memory: %s", machineClass.Name, nodeTemplateAttributes.Capacity.Cpu().String(), nodeTemplateAttributes.Capacity.Memory().String())
-				extendedResources := filterExtendedResources(nodeTemplateAttributes.Capacity)
+				extendedResources := removeKnownResources(nodeTemplateAttributes.Capacity)
+				if len(nodeTemplateAttributes.VirtualCapacity) > 0 {
+					maps.Copy(extendedResources, nodeTemplateAttributes.VirtualCapacity)
+					if len(extendedResources) > 0 {
+						klog.V(2).Infof("nodeTemplate from MachineClass %q added VirtualCapacity to ExtendedResources: %q", machineClass.Name, extendedResources)
+					}
+				}
 				instance = instanceType{
 					VCPU:             nodeTemplateAttributes.Capacity[apiv1.ResourceCPU],
 					Memory:           nodeTemplateAttributes.Capacity[apiv1.ResourceMemory],
@@ -1103,8 +1109,8 @@ func isMachineFailedOrTerminating(machine *v1alpha1.Machine) bool {
 	return false
 }
 
-// filterExtendedResources removes knownResourceNames from allResources and retains only the extendedResources.
-func filterExtendedResources(allResources v1.ResourceList) (extendedResources v1.ResourceList) {
+// removeKnownResources removes knownResourceNames from allResources and retains only the extendedResources.
+func removeKnownResources(allResources v1.ResourceList) (extendedResources v1.ResourceList) {
 	extendedResources = allResources.DeepCopy()
 	maps.DeleteFunc(extendedResources, func(name v1.ResourceName, _ resource.Quantity) bool {
 		return slices.Contains(knownResourceNames, name)
