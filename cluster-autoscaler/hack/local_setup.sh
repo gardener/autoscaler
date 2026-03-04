@@ -60,8 +60,33 @@ echo "$(kubectl create -f $PROJECT_ROOT/hack/kubeconfig-request.json --raw /apis
 
 # All the kubeconfigs are at place
 
-echo "kubeconfigs have been downloaded and kept at /dev/kubeconfigs/kubeconfig_<target/control>.yaml"
+echo "kubeconfigs have been downloaded and kept at $PROJECT_ROOT/dev/kubeconfigs/kubeconfig_<target/control>.yaml"
 
 export CONTROL_NAMESPACE=shoot--$PROJECT--$SHOOT
 export CONTROL_KUBECONFIG=$KUBECONFIG_PATH/kubeconfig_control.yaml
 export TARGET_KUBECONFIG=$KUBECONFIG_PATH/kubeconfig_target.yaml
+
+vars=(
+    "PROJECT_ROOT"
+    "KUBECONFIG_PATH"
+    "CONTROL_NAMESPACE"
+    "CONTROL_KUBECONFIG"
+    "TARGET_KUBECONFIG"
+)
+> "$PROJECT_ROOT/.env" # # creates empty file or truncates existing one
+{
+    echo "# Generated $(date '+%Y-%m-%d %H:%M:%S') by ${0}"
+    echo "# Do not edit manually — will be overwritten on next run"
+    echo ""
+    for var in "${vars[@]}"; do
+        if [[ -n "${!var+x}" ]]; then
+            # Safely quote value (handles spaces, $, \, etc.)
+            printf '%s=%q\n' "$var" "${!var}"
+        else
+            echo "# $var was unset — skipped"
+        fi
+    done
+
+} >> "$PROJECT_ROOT/.env"
+echo "Wrote ${#vars[@]} variables → .env"
+
