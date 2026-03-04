@@ -201,6 +201,7 @@ func createMCMManagerInternal(discoveryOpts cloudprovider.NodeGroupDiscoveryOpti
 		if err != nil {
 			return nil, err
 		}
+		klog.V(2).Infof("Using control cluster kubeconfig from %q, namespace %q", controlKubeconfigPath, namespace)
 	}
 
 	controlKubeconfig.Burst = *controlBurst
@@ -739,7 +740,7 @@ func (m *McmManager) GetMachineDeploymentNodeTemplate(nodeGroupName string) (*no
 				}
 			} else {
 				klog.V(1).Infof("Generating node template only using nodeTemplate from MachineClass %s: template resources-> cpu: %s,memory: %s", machineClass.Name, nodeTemplateAttributes.Capacity.Cpu().String(), nodeTemplateAttributes.Capacity.Memory().String())
-				var extendedResources apiv1.ResourceList
+				var extendedResources = apiv1.ResourceList{}
 				if len(nodeTemplateAttributes.Capacity) > 0 {
 					maps.Copy(extendedResources, nodeTemplateAttributes.Capacity)
 					extendedResources = removeKnownResources(extendedResources)
