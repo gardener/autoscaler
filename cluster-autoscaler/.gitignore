@@ -15,3 +15,6 @@ Session.vim
 
 # gosec
 gosec-report.sarif
+
+# ignore env file
+**/.env
