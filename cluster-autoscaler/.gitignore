@@ -17,3 +17,6 @@ autoscaler_processs.log*
 
 # gosec
 gosec-report.sarif
+
+# ignore env file
+**/.env
