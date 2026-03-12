@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	ginkgo "github.com/onsi/ginkgo/v2"
@@ -54,9 +53,6 @@ const (
 	// VpaInPlaceTimeout is a timeout for the VPA to finish in-place resizing a
 	// pod, if there are no mechanisms blocking it.
 	VpaInPlaceTimeout = 2 * time.Minute
-
-	// VpaNamespace is the default namespace that holds the all the VPA components.
-	VpaNamespace = "kube-system"
 )
 
 // UpdaterE2eDescribe describes a VPA updater e2e test.
@@ -466,13 +462,4 @@ func WaitForPodsUpdatedWithoutEviction(f *framework.Framework, initialPods *apiv
 	})
 	framework.Logf("finished waiting for at least one pod to be updated without eviction")
 	return err
-}
-
-func anyContainsSubstring(arr []string, substr string) bool {
-	for _, s := range arr {
-		if strings.Contains(s, substr) {
-			return true
-		}
-	}
-	return false
 }

@@ -66,8 +66,6 @@ const (
 	KwokProviderName = "kwok"
 	// HuaweicloudProviderName gets the provider name of huaweicloud
 	HuaweicloudProviderName = "huaweicloud"
-	// MCMProviderName gets the provider name of machine controller manager
-	MCMProviderName = "mcm"
 	// IonoscloudProviderName gets the provider name of ionoscloud
 	IonoscloudProviderName = "ionoscloud"
 	// OracleCloudProviderName gets the provider name of oci
@@ -100,9 +98,16 @@ const (
 
 // GpuConfig contains the label, type and the resource name for a GPU.
 type GpuConfig struct {
-	Label        string
-	Type         string
-	ResourceName apiv1.ResourceName
+	Label                string
+	Type                 string
+	ExtendedResourceName apiv1.ResourceName
+	DraDriverName        string
+}
+
+// ExposedViaDra determines whether a GPU described in the config
+// is exposed via device plugin or DRA driver
+func (gpu *GpuConfig) ExposedViaDra() bool {
+	return gpu.DraDriverName != ""
 }
 
 // CloudProvider contains configuration info and functions for interacting with
@@ -363,4 +368,13 @@ func ContainsCustomResources(resources []string) bool {
 		}
 	}
 	return false
+}
+
+// NodeGroupListToMapById returns a map of node group ID to nonode group
+func NodeGroupListToMapById(nodeGroups []NodeGroup) map[string]NodeGroup {
+	result := make(map[string]NodeGroup)
+	for _, nodeGroup := range nodeGroups {
+		result[nodeGroup.Id()] = nodeGroup
+	}
+	return result
 }

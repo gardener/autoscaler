@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	api_v1 "k8s.io/autoscaler/cluster-autoscaler/apis/capacitybuffer/autoscaling.x-k8s.io/v1alpha1"
+	api_v1 "k8s.io/autoscaler/cluster-autoscaler/apis/capacitybuffer/autoscaling.x-k8s.io/v1beta1"
 	cbclient "k8s.io/autoscaler/cluster-autoscaler/capacitybuffer/client"
 	"k8s.io/autoscaler/cluster-autoscaler/capacitybuffer/common"
 )
@@ -92,9 +92,9 @@ func limitNumberOfPodsForResource(podTemplate *corev1.PodTemplate, limits api_v1
 				continue
 			}
 			if maximumNumberOfPods == nil {
-				maximumNumberOfPods = pointerToInt32(int32(maxPods)) // #nosec - G115 (CWE-190) -- code inherited from upstream
+				maximumNumberOfPods = pointerToInt32(int32(maxPods))
 			} else {
-				maximumNumberOfPods = pointerToInt32(int32(min(*maximumNumberOfPods, int32(maxPods)))) // #nosec - G115 (CWE-190) -- code inherited from upstream
+				maximumNumberOfPods = pointerToInt32(int32(min(*maximumNumberOfPods, int32(maxPods))))
 			}
 		}
 	}

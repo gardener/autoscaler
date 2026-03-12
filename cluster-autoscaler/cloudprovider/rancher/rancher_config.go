@@ -20,7 +20,13 @@ import (
 	"fmt"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
+)
+
+const (
+	envUrl          = "RANCHER_URL"
+	envClusterName  = "RANCHER_CLUSTER_NAME"
+	envClusterToken = "RANCHER_TOKEN"
 )
 
 const (
