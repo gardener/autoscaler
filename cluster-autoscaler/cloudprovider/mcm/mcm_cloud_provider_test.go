@@ -8,11 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 	"math"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 
 	v1 "k8s.io/api/apps/v1"
 
