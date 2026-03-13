@@ -206,7 +206,7 @@ func getMaxReplicasForQuota(quota *corev1.ResourceQuota, podReqs corev1.Resource
 	if maxReplicas > math.MaxInt32 {
 		return int32(math.MaxInt32)
 	}
-	return int32(maxReplicas)
+	return int32(maxReplicas) // #nosec - G115 (CWE-190) -- bounded by math.MaxInt32 check above
 }
 
 func (r *resourceQuotaAllocator) updateUsages(quotas []*corev1.ResourceQuota, usages map[types.UID]corev1.ResourceList, podReqs corev1.ResourceList, replicas int32) {

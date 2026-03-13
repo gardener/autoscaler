@@ -29,12 +29,6 @@ const (
 	envClusterToken = "RANCHER_TOKEN"
 )
 
-const (
-	envUrl          = "RANCHER_URL"
-	envClusterName  = "RANCHER_CLUSTER_NAME"
-	envClusterToken = "RANCHER_TOKEN"
-)
-
 type cloudConfig struct {
 	URL               string `yaml:"url"`
 	Token             string `yaml:"token"`

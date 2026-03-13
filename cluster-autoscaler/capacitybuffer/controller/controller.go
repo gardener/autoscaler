@@ -101,7 +101,7 @@ func NewDefaultBufferController(
 
 func (c *bufferController) configureEventHandlers() {
 	// CapacityBuffer Informer
-	c.client.GetBufferInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.client.GetBufferInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // #nosec G104 (CWE-703) -- informer registration errors are non-fatal
 		AddFunc: func(obj interface{}) {
 			c.enqueueNamespace(obj)
 		},
@@ -127,7 +127,7 @@ func (c *bufferController) configureEventHandlers() {
 	})
 
 	// ResourceQuota Informer
-	c.client.GetResourceQuotaInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.client.GetResourceQuotaInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // #nosec G104 (CWE-703) -- informer registration errors are non-fatal
 		AddFunc: func(obj interface{}) {
 			c.enqueueNamespace(obj)
 		},
@@ -152,7 +152,7 @@ func (c *bufferController) configureEventHandlers() {
 	})
 
 	// PodTemplate Informer
-	c.client.GetPodTemplateInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.client.GetPodTemplateInformer().AddEventHandler(cache.ResourceEventHandlerFuncs{ // #nosec G104 (CWE-703) -- informer registration errors are non-fatal
 		AddFunc: func(obj interface{}) {
 			c.enqueueBuffersReferencingPodTemplate(obj)
 		},

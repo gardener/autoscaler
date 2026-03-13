@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/autoscaler/cluster-autoscaler/apis/capacitybuffer/autoscaling.x-k8s.io/v1beta1"
 )
 
@@ -132,13 +131,3 @@ func (f *testGenerationFilter) Filter(buffers []*v1.CapacityBuffer) ([]*v1.Capac
 }
 
 func (f *testGenerationFilter) CleanUp() {}
-
-func getTestBufferWithGeneration(bufferName string, generation int64) *v1.CapacityBuffer {
-	return &v1.CapacityBuffer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:       bufferName,
-			Namespace:  "default",
-			Generation: generation,
-		},
-	}
-}

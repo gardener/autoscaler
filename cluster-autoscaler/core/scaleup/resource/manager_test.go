@@ -67,11 +67,11 @@ func TestDeltaForNode(t *testing.T) {
 	for _, testCase := range testCases {
 		cp := testprovider.NewTestCloudProviderBuilder().Build()
 		ctx := newContext(t, cp)
-		processors := processorstest.NewTestProcessors(&ctx)
+		processors, _ := processorstest.NewTestProcessors(config.AutoscalingOptions{})
 
 		ng := testCase.nodeGroupConfig
 		group, nodes := newNodeGroup(t, cp, ng.Name, ng.Min, ng.Max, ng.Size, ng.CPU, ng.Mem)
-		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil)
+		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil, nil)
 		assert.NoError(t, err)
 		nodeInfos, _ := nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(nil, false).Process(&ctx, nodes, []*appsv1.DaemonSet{}, taints.TaintConfig{}, time.Now())
 
@@ -110,11 +110,11 @@ func TestResourcesLeft(t *testing.T) {
 	for _, testCase := range testCases {
 		cp := newCloudProvider(t, 1000, 1000)
 		ctx := newContext(t, cp)
-		processors := processorstest.NewTestProcessors(&ctx)
+		processors, _ := processorstest.NewTestProcessors(config.AutoscalingOptions{})
 
 		ng := testCase.nodeGroupConfig
 		_, nodes := newNodeGroup(t, cp, ng.Name, ng.Min, ng.Max, ng.Size, ng.CPU, ng.Mem)
-		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil)
+		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil, nil)
 		assert.NoError(t, err)
 		nodeInfos, _ := nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(nil, false).Process(&ctx, nodes, []*appsv1.DaemonSet{}, taints.TaintConfig{}, time.Now())
 
@@ -163,11 +163,11 @@ func TestApplyLimits(t *testing.T) {
 	for _, testCase := range testCases {
 		cp := testprovider.NewTestCloudProviderBuilder().Build()
 		ctx := newContext(t, cp)
-		processors := processorstest.NewTestProcessors(&ctx)
+		processors, _ := processorstest.NewTestProcessors(config.AutoscalingOptions{})
 
 		ng := testCase.nodeGroupConfig
 		group, nodes := newNodeGroup(t, cp, ng.Name, ng.Min, ng.Max, ng.Size, ng.CPU, ng.Mem)
-		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil)
+		err := ctx.ClusterSnapshot.SetClusterState(nodes, nil, nil, nil)
 		assert.NoError(t, err)
 		nodeInfos, _ := nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(nil, false).Process(&ctx, nodes, []*appsv1.DaemonSet{}, taints.TaintConfig{}, time.Now())
 
@@ -223,7 +223,7 @@ func TestResourceManagerWithGpuResource(t *testing.T) {
 	provider.SetResourceLimiter(resourceLimiter)
 
 	context := newContext(t, provider)
-	processors := processorstest.NewTestProcessors(&context)
+	processors, _ := processorstest.NewTestProcessors(config.AutoscalingOptions{})
 
 	n1 := newNode(t, "n1", 8, 16)
 	utils_test.AddGpusToNode(n1, 4)
@@ -234,7 +234,7 @@ func TestResourceManagerWithGpuResource(t *testing.T) {
 	assert.NoError(t, err)
 
 	nodes := []*corev1.Node{n1}
-	err = context.ClusterSnapshot.SetClusterState(nodes, nil, nil)
+	err = context.ClusterSnapshot.SetClusterState(nodes, nil, nil, nil)
 	assert.NoError(t, err)
 	nodeInfos, _ := nodeinfosprovider.NewDefaultTemplateNodeInfoProvider(nil, false).Process(&context, nodes, []*appsv1.DaemonSet{}, taints.TaintConfig{}, time.Now())
 
@@ -272,7 +272,7 @@ func newCloudProvider(t *testing.T, cpu, mem int64) *testprovider.TestCloudProvi
 func newContext(t *testing.T, provider cloudprovider.CloudProvider) context.AutoscalingContext {
 	podLister := kube_util.NewTestPodLister([]*corev1.Pod{})
 	listers := kube_util.NewListerRegistry(nil, nil, podLister, nil, nil, nil, nil, nil, nil)
-	context, err := test.NewScaleTestAutoscalingContext(config.AutoscalingOptions{}, &fake.Clientset{}, listers, provider, nil, nil)
+	context, err := test.NewScaleTestAutoscalingContext(config.AutoscalingOptions{}, &fake.Clientset{}, listers, provider, nil, nil, nil)
 	assert.NoError(t, err)
 	return context
 }

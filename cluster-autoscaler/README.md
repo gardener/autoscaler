@@ -249,8 +249,9 @@ Supported cloud providers:
 
 Starting with Gardener/Autoscaler v1.20, versioning scheme has changed to match Kubernetes and upstream Autoscaler minor releases exactly. Note that there is a jump of major version as well.
 
-| Kubernetes Version | CA Version | Gardener CA Version | 
+| Kubernetes Version | CA Version | Gardener CA Version |
 |--------------------|------------|---------------------|
+| 1.35.X             | 1.35.X     | 1.35.X              |
 | 1.34.X             | 1.34.X     | 1.34.X              |
 | 1.33.X             | 1.33.X     | 1.33.X              |
 | 1.32.X             | 1.32.X     | 1.32.X              |
