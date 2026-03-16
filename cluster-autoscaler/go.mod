@@ -294,3 +294,5 @@ replace k8s.io/autoscaler/cluster-autoscaler/apis => ./apis
 replace k8s.io/cri-client => k8s.io/cri-client v0.34.1
 
 replace k8s.io/externaljwt => k8s.io/externaljwt v0.34.1
+
+replace github.com/gardener/machine-controller-manager => github.com/r4mek/machine-controller-manager v0.60.1-0.20260316085201-829bf7362f60
