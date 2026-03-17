@@ -577,7 +577,7 @@ func (ngImpl *nodeGroup) AtomicIncreaseSize(delta int) error {
 // getMachineNamesTriggeredForDeletion returns the set of machine names contained within the machineutils.TriggerDeletionByMCM annotation on the given MachineDeployment
 // TODO: Move to using MCM annotations.GetMachineNamesTriggeredForDeletion after MCM release.
 func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []string {
-	if mcd.Annotations[machineutils.TriggerDeletionByMCM] == "" {
+	if mcd == nil || mcd.Annotations[machineutils.TriggerDeletionByMCM] == "" {
 		return nil
 	}
 	machineNamesWithTimestamps := strings.Split(mcd.Annotations[machineutils.TriggerDeletionByMCM], ",")
@@ -592,9 +592,8 @@ func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []stri
 func createMachinesTriggeredForDeletionAnnotValue(mcd *v1alpha1.MachineDeployment, machineNames []string) string {
 	timestamp := time.Now().Format(time.RFC3339)
 	slices.Sort(machineNames)
-	annotationValue := ""
-	if mcd.Annotations[machineutils.TriggerDeletionByMCM] != "" {
-		return annotationValue + "," + strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
+	if mcd != nil && mcd.Annotations[machineutils.TriggerDeletionByMCM] != "" {
+		return mcd.Annotations[machineutils.TriggerDeletionByMCM] + "," + strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
 	}
 	return strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
 }
