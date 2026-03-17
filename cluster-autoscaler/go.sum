@@ -348,8 +348,8 @@ github.com/prometheus/common v0.62.0 h1:xasJaQlnWAeyHdUBeGjXmutelfJHWMRr+Fg4QszZ
 github.com/prometheus/common v0.62.0/go.mod h1:vyBcEuLSvWos9B1+CyL7JZ2up+uFzXhkqml0W5zIY1I=
 github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0learggepc=
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
-github.com/r4mek/machine-controller-manager v0.60.1-0.20260316085201-829bf7362f60 h1:3+ID9hNamiGWh/mzJzZ9E3lYZnXsp1h0hkh54pIidOg=
-github.com/r4mek/machine-controller-manager v0.60.1-0.20260316085201-829bf7362f60/go.mod h1:8eE1qLztrWIbOM71mHSQGaC6Q+pl5lvOyN08qP39D7o=
+github.com/r4mek/machine-controller-manager v0.60.1-0.20260317071809-88529b790f68 h1:iynVCWVYkX+Ll515Jubw4ffG/o1ZlRUUBvcY3bR3GRM=
+github.com/r4mek/machine-controller-manager v0.60.1-0.20260317071809-88529b790f68/go.mod h1:8eE1qLztrWIbOM71mHSQGaC6Q+pl5lvOyN08qP39D7o=
 github.com/rogpeppe/go-internal v1.13.1 h1:KvO1DLK/DRN07sQ1LQKScxyZJuNnedQ5/wKSR38lUII=
 github.com/rogpeppe/go-internal v1.13.1/go.mod h1:uMEvuHeurkdAXX61udpOXGD/AzZDWNMNyH2VO9fmH0o=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
