@@ -575,7 +575,6 @@ func (ngImpl *nodeGroup) AtomicIncreaseSize(delta int) error {
 }
 
 // getMachineNamesTriggeredForDeletion returns the set of machine names contained within the machineutils.TriggerDeletionByMCM annotation on the given MachineDeployment
-// TODO: Move to using MCM annotations.GetMachineNamesTriggeredForDeletion after MCM release.
 func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []string {
 	if mcd == nil || mcd.Annotations[machineutils.TriggerDeletionByMCM] == "" {
 		return nil
@@ -583,17 +582,19 @@ func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []stri
 	machineNamesWithTimestamps := strings.Split(mcd.Annotations[machineutils.TriggerDeletionByMCM], ",")
 	machineNames := make([]string, 0, len(machineNamesWithTimestamps))
 	for _, machineNameWithTimestamp := range machineNamesWithTimestamps {
-		machineNames = append(machineNames, strings.Split(machineNameWithTimestamp, "~")[0])
+		parts := strings.Split(machineNameWithTimestamp, "~")
+		if len(parts) != 2 {
+			klog.Errorf("Unexpected format for machineNameWithTimestamp %q in annotation %q of MachineDeployment %q, expected format is <machineName>~<timestamp>", machineNameWithTimestamp, machineutils.TriggerDeletionByMCM, mcd.Name)
+			continue
+		}
+		machineNames = append(machineNames, parts[0])
 	}
 	return machineNames
 }
 
-// TODO: Move to using MCM annotations.CreateMachinesTriggeredForDeletionAnnotValue after MCM release
-func createMachinesTriggeredForDeletionAnnotValue(mcd *v1alpha1.MachineDeployment, machineNames []string) string {
-	timestamp := time.Now().Format(time.RFC3339)
+// createMachinesTriggeredForDeletionAnnotValue creates the value for the machineutils.TriggerDeletionByMCM annotation based on the given machine names and timestamp.
+// The format of the returned string is expected to be <machineName1>~<timestamp>,<machineName2>~<timestamp>...
+func createMachinesTriggeredForDeletionAnnotValue(machineNames []string, timestamp string) string {
 	slices.Sort(machineNames)
-	if mcd != nil && mcd.Annotations[machineutils.TriggerDeletionByMCM] != "" {
-		return mcd.Annotations[machineutils.TriggerDeletionByMCM] + "," + strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
-	}
 	return strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
 }
