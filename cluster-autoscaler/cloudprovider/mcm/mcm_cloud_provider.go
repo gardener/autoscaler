@@ -584,7 +584,7 @@ func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []stri
 	for _, machineNameWithTimestamp := range machineNamesWithTimestamps {
 		parts := strings.Split(machineNameWithTimestamp, "~")
 		if len(parts) != 2 {
-			klog.Errorf("Unexpected format for machineNameWithTimestamp %q in annotation %q of MachineDeployment %q, expected format is <machineName>~<timestamp>", machineNameWithTimestamp, machineutils.TriggerDeletionByMCM, mcd.Name)
+			klog.Errorf("unexpected format for machineNameWithTimestamp %q in annotation %q of MachineDeployment %q, expected format is <machineName>~<timestamp>", machineNameWithTimestamp, machineutils.TriggerDeletionByMCM, mcd.Name)
 			continue
 		}
 		machineNames = append(machineNames, parts[0])
