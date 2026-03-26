@@ -1144,5 +1144,6 @@ func computeScaleDownData(md *v1alpha1.MachineDeployment, machineNamesForDeletio
 		mdCopy.Spec.Replicas = expectedReplicas
 		data.RevisedMachineDeployment = mdCopy
 	}
+
 	return
 }
