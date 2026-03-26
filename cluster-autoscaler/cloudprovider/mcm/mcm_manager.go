@@ -1135,7 +1135,7 @@ func computeScaleDownData(md *v1alpha1.MachineDeployment, machineNamesForDeletio
 			mdCopy.Annotations = make(map[string]string)
 		}
 		timestamp := time.Now().Format(time.RFC3339)
-		mdCopy.Annotations[machineutils.LastReplicaChangeAnnotation] = timestamp
+		mdCopy.Annotations[machineutils.LastDeploymentReplicaChangeByScalerTime] = timestamp
 		triggerDeletionAnnotValue := createMachinesTriggeredForDeletionAnnotValue(uniqueForDeletionSet.UnsortedList(), timestamp)
 		if mdCopy.Annotations[machineutils.TriggerDeletionByMCM] != "" {
 			mdCopy.Annotations[machineutils.TriggerDeletionByMCM] += ","
