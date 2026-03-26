@@ -295,4 +295,4 @@ replace k8s.io/cri-client => k8s.io/cri-client v0.34.1
 
 replace k8s.io/externaljwt => k8s.io/externaljwt v0.34.1
 
-replace github.com/gardener/machine-controller-manager => github.com/r4mek/machine-controller-manager v0.60.1-0.20260317071809-88529b790f68
+replace github.com/gardener/machine-controller-manager => github.com/r4mek/machine-controller-manager v0.60.1-0.20260326151956-5372d661046a
