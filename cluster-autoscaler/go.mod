@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go v1.51.28
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/digitalocean/godo v1.27.0
-	github.com/gardener/machine-controller-manager v0.60.0
+	github.com/gardener/machine-controller-manager v0.61.3
 	github.com/gardener/machine-controller-manager-provider-aws v0.26.0
 	github.com/gardener/machine-controller-manager-provider-azure v0.17.0
 	github.com/gofrs/uuid v4.4.0+incompatible
@@ -294,5 +294,3 @@ replace k8s.io/autoscaler/cluster-autoscaler/apis => ./apis
 replace k8s.io/cri-client => k8s.io/cri-client v0.34.1
 
 replace k8s.io/externaljwt => k8s.io/externaljwt v0.34.1
-
-replace github.com/gardener/machine-controller-manager => github.com/r4mek/machine-controller-manager v0.60.1-0.20260327092326-e3ee51751fb5
