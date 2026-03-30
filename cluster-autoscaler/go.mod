@@ -20,9 +20,9 @@ require (
 	github.com/aws/aws-sdk-go v1.51.28
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/digitalocean/godo v1.27.0
-	github.com/gardener/machine-controller-manager v0.59.0
-	github.com/gardener/machine-controller-manager-provider-aws v0.25.0
-	github.com/gardener/machine-controller-manager-provider-azure v0.16.0
+	github.com/gardener/machine-controller-manager v0.61.3
+	github.com/gardener/machine-controller-manager-provider-aws v0.26.0
+	github.com/gardener/machine-controller-manager-provider-azure v0.17.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/google/go-cmp v0.7.0
@@ -129,7 +129,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
