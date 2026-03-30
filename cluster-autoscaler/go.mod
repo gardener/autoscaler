@@ -48,7 +48,6 @@ require (
 	k8s.io/client-go v0.30.1
 	k8s.io/cloud-provider v0.30.1
 	k8s.io/cloud-provider-aws v1.27.0
-	k8s.io/code-generator v0.30.1
 	k8s.io/component-base v0.30.1
 	k8s.io/component-helpers v0.30.1
 	k8s.io/klog/v2 v2.120.1
@@ -57,7 +56,6 @@ require (
 	k8s.io/legacy-cloud-providers v0.0.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/cloud-provider-azure v1.28.0
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -187,6 +185,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.29.3 // indirect
+	k8s.io/code-generator v0.30.1 // indirect
 	k8s.io/controller-manager v0.30.1 // indirect
 	k8s.io/cri-api v0.30.1 // indirect
 	k8s.io/csi-translation-lib v0.27.0 // indirect
@@ -199,6 +198,7 @@ require (
 	k8s.io/mount-utils v0.26.0-alpha.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.29.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
 replace github.com/aws/aws-sdk-go/service/eks => github.com/aws/aws-sdk-go/service/eks v1.38.49
