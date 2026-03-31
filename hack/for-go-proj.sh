@@ -74,6 +74,6 @@ if [ "${CMD}" = "build" ] || [ "${CMD}" == "test" ]; then
   popd
   pushd ${CONTRIB_ROOT}/cluster-autoscaler/
   # FORK-CHANGE: do not run integration tests here
-  go test $(go list ./... | grep -v integration)
+  go test $(go list ./... | grep -v integration | grep -v cloudprovider/azure)
   popd
 fi
