@@ -18,7 +18,7 @@ require (
 	github.com/aws/aws-sdk-go v1.51.28
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/digitalocean/godo v1.27.0
-	github.com/gardener/machine-controller-manager v0.60.0
+	github.com/gardener/machine-controller-manager v0.61.3
 	github.com/gardener/machine-controller-manager-provider-aws v0.26.0
 	github.com/gardener/machine-controller-manager-provider-azure v0.17.0
 	github.com/gofrs/uuid v4.4.0+incompatible

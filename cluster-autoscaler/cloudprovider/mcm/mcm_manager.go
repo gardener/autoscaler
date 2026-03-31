@@ -1119,7 +1119,6 @@ func computeScaleDownData(md *v1alpha1.MachineDeployment, machineNamesForDeletio
 	alreadyMarkedSet := sets.New(getMachineNamesTriggeredForDeletion(md)...)
 
 	uniqueForDeletionSet := forDeletionSet.Difference(alreadyMarkedSet)
-	toBeMarkedSet := alreadyMarkedSet.Union(forDeletionSet)
 
 	data.RevisedToBeDeletedMachineNames = uniqueForDeletionSet
 	data.RevisedScaledownAmount = uniqueForDeletionSet.Len()
@@ -1135,12 +1134,16 @@ func computeScaleDownData(md *v1alpha1.MachineDeployment, machineNamesForDeletio
 		if mdCopy.Annotations == nil {
 			mdCopy.Annotations = make(map[string]string)
 		}
-		triggerDeletionAnnotValue := createMachinesTriggeredForDeletionAnnotValue(toBeMarkedSet.UnsortedList())
-		if mdCopy.Annotations[machineutils.TriggerDeletionByMCM] != triggerDeletionAnnotValue {
-			mdCopy.Annotations[machineutils.TriggerDeletionByMCM] = triggerDeletionAnnotValue
+		timestamp := time.Now().Format(time.RFC3339)
+		mdCopy.Annotations[machineutils.LastDeploymentReplicaChangeByScalerTime] = timestamp
+		triggerDeletionAnnotValue := createMachinesTriggeredForDeletionAnnotValue(uniqueForDeletionSet.UnsortedList(), timestamp)
+		if mdCopy.Annotations[machineutils.TriggerDeletionByMCM] != "" {
+			mdCopy.Annotations[machineutils.TriggerDeletionByMCM] += ","
 		}
+		mdCopy.Annotations[machineutils.TriggerDeletionByMCM] += triggerDeletionAnnotValue
 		mdCopy.Spec.Replicas = expectedReplicas
 		data.RevisedMachineDeployment = mdCopy
 	}
+
 	return
 }
