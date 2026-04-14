@@ -8,11 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 	"math"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 
 	v1 "k8s.io/api/apps/v1"
 
@@ -20,6 +21,8 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	customfake "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/mcm/fakeclient"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
+	clientfeatures "k8s.io/client-go/features"
+	clientfeaturestesting "k8s.io/client-go/features/testing"
 
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	. "github.com/onsi/gomega"
@@ -82,6 +85,7 @@ func setupEnv(setup *setup) ([]runtime.Object, []runtime.Object, []runtime.Objec
 }
 
 func TestDeleteNodes(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	type action struct {
 		node *corev1.Node
 	}
@@ -308,6 +312,7 @@ func TestDeleteNodes(t *testing.T) {
 }
 
 func TestIdempotencyOfDeleteNodes(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	setupObj := setup{
 		nodes:              newNodes(3, "fakeID"),
 		machines:           newMachines(3, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3", "3", "3"}),
@@ -337,6 +342,7 @@ func TestIdempotencyOfDeleteNodes(t *testing.T) {
 }
 
 func TestRefresh(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	type expect struct {
 		prio3Machines                          []string
 		machinesTriggerDeletionAnnotationValue string
@@ -449,6 +455,7 @@ func TestRefresh(t *testing.T) {
 //		}
 //	}
 func TestNodes(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	const (
 		outOfQuotaMachineStatusErrorDescription         = "Cloud provider message - machine codes error: code = [ResourceExhausted] message = [Create machine \"machine-with-vm-create-error-out-of-quota\" failed: The following errors occurred: [{QUOTA_EXCEEDED  Quota 'N2_CPUS' exceeded.  Limit: 6000.0 in region europe-west3. [] []}]]"
 		invalidCredentialsMachineStatusErrorDescription = "Cloud provider message - machine codes error: code = [Internal] message = [user is not authorized to perform this action]"
@@ -555,6 +562,7 @@ func TestNodes(t *testing.T) {
 }
 
 func TestGetOptions(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	ngAutoScalingOpDefaults := config.NodeGroupAutoscalingOptions{
 		ScaleDownUtilizationThreshold:    0.5,
 		ScaleDownGpuUtilizationThreshold: 0.5,

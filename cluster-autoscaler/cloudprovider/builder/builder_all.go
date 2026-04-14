@@ -44,6 +44,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/kwok"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/linode"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/magnum"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/mcm"
 	oci "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/oci/instancepools"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/ovhcloud"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/rancher"
@@ -125,6 +126,8 @@ func buildCloudProvider(opts *coreoptions.AutoscalerOptions,
 		return externalgrpc.BuildExternalGrpc(opts, do, rl)
 	case cloudprovider.MagnumProviderName:
 		return magnum.BuildMagnum(opts, do, rl)
+	case mcm.ProviderName:
+		return mcm.BuildMCM(opts.AutoscalingOptions, do, rl)
 	case cloudprovider.HuaweicloudProviderName:
 		return huaweicloud.BuildHuaweiCloud(opts, do, rl)
 	case cloudprovider.OVHcloudProviderName:
