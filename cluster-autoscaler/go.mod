@@ -24,8 +24,8 @@ require (
 	github.com/aws/smithy-go v1.24.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/digitalocean/godo v1.169.0
-	github.com/gardener/machine-controller-manager v0.61.2
-	github.com/gardener/machine-controller-manager-provider-aws v0.27.2
+	github.com/gardener/machine-controller-manager v0.61.3
+	github.com/gardener/machine-controller-manager-provider-aws v0.27.3
 	github.com/gardener/machine-controller-manager-provider-azure v0.19.0
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
@@ -53,7 +53,7 @@ require (
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/inf.v0 v0.9.1
 	k8s.io/api v0.35.0
-	k8s.io/apimachinery v0.35.0
+	k8s.io/apimachinery v0.35.3
 	k8s.io/apiserver v0.35.0
 	k8s.io/autoscaler/cluster-autoscaler/apis v0.0.0-20240627115740-d52e4b9665d7
 	k8s.io/client-go v0.35.0
@@ -233,7 +233,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.32.1 // indirect
+	k8s.io/apiextensions-apiserver v0.35.0 // indirect
 	k8s.io/code-generator v0.35.0 // indirect
 	k8s.io/controller-manager v0.35.0 // indirect
 	k8s.io/cri-api v0.35.0 // indirect
@@ -246,10 +246,10 @@ require (
 	k8s.io/mount-utils v0.26.0-alpha.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.33.0 // indirect
 	sigs.k8s.io/cloud-provider-azure/pkg/azclient/configloader v0.8.4 // indirect
-	sigs.k8s.io/controller-runtime v0.20.3 // indirect
+	sigs.k8s.io/controller-runtime v0.23.3 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.2-0.20260122202528-d9cc6641c482 // indirect
 )
 
 replace github.com/aws/aws-sdk-go/service/eks => github.com/aws/aws-sdk-go/service/eks v1.38.49
@@ -260,7 +260,7 @@ replace k8s.io/api => k8s.io/api v0.35.0
 
 replace k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.35.0
 
-replace k8s.io/apimachinery => k8s.io/apimachinery v0.35.2
+replace k8s.io/apimachinery => k8s.io/apimachinery v0.35.3
 
 replace k8s.io/apiserver => k8s.io/apiserver v0.35.0
 
@@ -280,7 +280,7 @@ replace k8s.io/component-helpers => k8s.io/component-helpers v0.35.0
 
 replace k8s.io/controller-manager => k8s.io/controller-manager v0.35.0
 
-replace k8s.io/cri-api => k8s.io/cri-api v0.35.2
+replace k8s.io/cri-api => k8s.io/cri-api v0.35.3
 
 replace k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.35.0
 
@@ -298,7 +298,7 @@ replace k8s.io/kubelet => k8s.io/kubelet v0.35.0
 
 replace k8s.io/metrics => k8s.io/metrics v0.35.0
 
-replace k8s.io/mount-utils => k8s.io/mount-utils v0.35.2
+replace k8s.io/mount-utils => k8s.io/mount-utils v0.35.3
 
 replace k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.35.0
 
@@ -318,4 +318,4 @@ replace k8s.io/autoscaler/cluster-autoscaler/apis => ./apis
 
 replace k8s.io/cri-client => k8s.io/cri-client v0.35.0
 
-replace k8s.io/externaljwt => k8s.io/externaljwt v0.35.2
+replace k8s.io/externaljwt => k8s.io/externaljwt v0.35.3

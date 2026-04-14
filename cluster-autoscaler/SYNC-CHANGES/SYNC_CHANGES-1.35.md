@@ -26,8 +26,8 @@
 - Go version bumped to 1.25.0 (required by k8s v1.35).
 
 ### Changes during go.mod update
-- mcm v0.60.0 -> v0.61.2
-- mcm-provider-aws v0.26.0 -> v0.27.2
+- mcm v0.60.0 -> v0.61.3
+- mcm-provider-aws v0.26.0 -> v0.27.3
 - mcm-provider-azure v0.17.0 -> v0.19.0
 - k8s.io/api v0.34.1 -> v0.35.0
 - k8s.io/kubernetes v1.34.1 -> v1.35.0
