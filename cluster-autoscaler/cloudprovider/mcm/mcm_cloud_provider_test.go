@@ -116,7 +116,7 @@ func TestDeleteNodes(t *testing.T) {
 			expect{
 				prio1Machines:                          newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
 				mdName:                                 "machinedeployment-1",
-				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1)),
+				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1), time.Now().Format(time.RFC3339)),
 				mdReplicas:                             1,
 				err:                                    nil,
 			},
@@ -133,7 +133,7 @@ func TestDeleteNodes(t *testing.T) {
 			action{node: newNode("node-1", "requested://machine-1")},
 			expect{
 				prio1Machines:                          newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
-				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1)),
+				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1), time.Now().Format(time.RFC3339)),
 				mdName:                                 "machinedeployment-1",
 				mdReplicas:                             0,
 				err:                                    nil,
@@ -198,7 +198,7 @@ func TestDeleteNodes(t *testing.T) {
 			action{node: newNodes(1, "fakeID")[0]},
 			expect{
 				prio1Machines:                          newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
-				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1)),
+				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1), time.Now().Format(time.RFC3339)),
 				mdName:                                 "machinedeployment-1",
 				mdReplicas:                             1,
 				err:                                    nil,
@@ -305,8 +305,7 @@ func TestDeleteNodes(t *testing.T) {
 			machineDeployment, err := m.machineClient.MachineDeployments(m.namespace).Get(context.TODO(), entry.expect.mdName, metav1.GetOptions{})
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", entry.expect.mdReplicas))
-			g.Expect(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM]).To(Equal(entry.expect.machinesTriggerDeletionAnnotationValue))
-
+			g.Expect(strings.Split(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM], "~")[0]).To(Equal(strings.Split(entry.expect.machinesTriggerDeletionAnnotationValue, "~")[0]))
 		})
 	}
 }
@@ -338,7 +337,7 @@ func TestIdempotencyOfDeleteNodes(t *testing.T) {
 	machineDeployment, err := m.machineClient.MachineDeployments(m.namespace).Get(context.TODO(), setupObj.machineDeployments[0].Name, metav1.GetOptions{})
 	g.Expect(err).ToNot(HaveOccurred())
 	g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", 2))
-	g.Expect(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM]).To(Equal(createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1))))
+	g.Expect(strings.Split(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM], "~")[0]).To(Equal(strings.Split(createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1), time.Now().Format(time.RFC3339)), "~")[0]))
 }
 
 func TestRefresh(t *testing.T) {
@@ -403,8 +402,7 @@ func TestRefresh(t *testing.T) {
 				mcmDeployment:      newMCMDeployment(1),
 			},
 			expect{
-				machinesTriggerDeletionAnnotationValue: createMachinesTriggeredForDeletionAnnotValue(generateNames("machine", 1)),
-				err:                                    nil,
+				err: nil,
 			},
 		},
 	}

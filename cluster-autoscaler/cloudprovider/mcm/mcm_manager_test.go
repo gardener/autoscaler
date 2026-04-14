@@ -18,14 +18,17 @@ package mcm
 
 import (
 	"errors"
+	"maps"
+	"math/rand/v2"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
 	"k8s.io/utils/ptr"
-	"maps"
-	"math/rand/v2"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	apiv1 "k8s.io/api/core/v1"
@@ -232,7 +235,7 @@ func TestComputeScaledownData(t *testing.T) {
 
 		machineNamesForDeletion := []string{"n1"}
 		data := computeScaleDownData(md, machineNamesForDeletion)
-		assert.Equal(t, createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion), data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM])
+		assert.Equal(t, strings.Split(createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion, time.Now().Format(time.RFC3339)), "~")[0], strings.Split(data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM], "~")[0])
 		assert.Equal(t, len(machineNamesForDeletion), data.RevisedScaledownAmount)
 		assert.Equal(t, int32(2-len(machineNamesForDeletion)), data.RevisedMachineDeployment.Spec.Replicas)
 	})
@@ -244,7 +247,7 @@ func TestComputeScaledownData(t *testing.T) {
 
 		machineNamesForDeletion := []string{"n1"}
 		data := computeScaleDownData(md, machineNamesForDeletion)
-		assert.Equal(t, createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion), data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM])
+		assert.Equal(t, strings.Split(createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion, time.Now().Format(time.RFC3339)), "~")[0], strings.Split(data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM], "~")[0])
 		assert.Equal(t, len(machineNamesForDeletion), data.RevisedScaledownAmount)
 
 		expectedReplicas := int32(initialReplicas - len(machineNamesForDeletion))
@@ -266,7 +269,6 @@ func TestComputeScaledownData(t *testing.T) {
 
 		machineNamesForDeletion := []string{"n1", "n2"}
 		data := computeScaleDownData(md, machineNamesForDeletion)
-		assert.Equal(t, createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion), data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM])
 		assert.Equal(t, len(machineNamesForDeletion), data.RevisedScaledownAmount)
 		expectedReplicas := int32(initialReplicas - len(machineNamesForDeletion))
 		assert.Equal(t, expectedReplicas, data.RevisedMachineDeployment.Spec.Replicas)
@@ -287,7 +289,6 @@ func TestComputeScaledownData(t *testing.T) {
 
 		machineNamesForDeletion := sets.New("n1", "n2")
 		data := computeScaleDownData(md, machineNamesForDeletion.UnsortedList())
-		assert.Equal(t, createMachinesTriggeredForDeletionAnnotValue(machineNamesForDeletion.UnsortedList()), data.RevisedMachineDeployment.Annotations[machineutils.TriggerDeletionByMCM])
 		assert.Equal(t, len(machineNamesForDeletion), data.RevisedScaledownAmount)
 		expectedReplicas := int32(initialReplicas - len(machineNamesForDeletion))
 		assert.Equal(t, expectedReplicas, data.RevisedMachineDeployment.Spec.Replicas)

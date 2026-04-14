@@ -13,11 +13,11 @@ on:
 
 jobs:
   prepare:
-    uses: gardener/cc-utils/.github/workflows/prepare.yaml@master
+    uses: gardener/cc-utils/.github/workflows/prepare.yaml@v1
     with:
       mode: ${{ inputs.mode }}
     permissions:
-      contents: read
+      id-token: write
 
   oci-images:
     name: Build OCI-Images
@@ -28,7 +28,7 @@ jobs:
       packages: write
       id-token: write
     secrets: inherit
-    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@master
+    uses: gardener/cc-utils/.github/workflows/oci-ocm.yaml@v1
     strategy:
       matrix:
         args:
@@ -58,7 +58,7 @@ jobs:
       #     root-reserve-mb: 512
       #     swap-size-mb: 1024
       #     remove-dotnet: "true"
-      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
       - name: run-test
         shell: bash
         run: |
@@ -69,7 +69,7 @@ jobs:
 
           tar czf /tmp/blobs.d/test-log.tar.gz -C /tmp/blobs.d test-log.txt
       - name: add-reports-to-component-descriptor
-        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
+        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
         with:
           blobs-directory: /tmp/blobs.d
           ocm-resources: |
@@ -91,7 +91,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: "1.25.0"
-      - uses: gardener/cc-utils/.github/actions/trusted-checkout@master
+      - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
       - name: run-check
         run: |
           set -eu
@@ -99,7 +99,7 @@ jobs:
           # verify calls `make sast-report`, which generates `gosec-report.sarif`
           tar czf gosec-report.tar.gz -C cluster-autoscaler gosec-report.sarif
       - name: add-sast-report-to-component-descriptor
-        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@master
+        uses: gardener/cc-utils/.github/actions/export-ocm-fragments@v1
         with:
           blobs-directory: .
           ocm-resources: |

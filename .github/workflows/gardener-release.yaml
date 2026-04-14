@@ -12,15 +12,16 @@ on:
 jobs:
   build:
     uses: ./.github/workflows/build.yaml
+    secrets: inherit
     permissions:
-      contents: write
+      contents: read
       packages: write
       id-token: write
     with:
       mode: release
 
   release-to-github-and-bump:
-    uses: gardener/cc-utils/.github/workflows/release.yaml@master
+    uses: gardener/cc-utils/.github/workflows/release.yaml@v1
     needs:
       - build
     secrets: inherit
@@ -31,5 +32,4 @@ jobs:
     with:
       release-commit-target: branch
       next-version: ${{ inputs.next-version }}
-      next-version-callback-action-path:
       slack-channel-id: C0170QTBJUW # #gardener-mcm

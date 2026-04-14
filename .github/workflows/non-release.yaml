@@ -10,15 +10,14 @@ jobs:
       mode: snapshot
     secrets: inherit
     permissions:
-      contents: write
+      contents: read
       packages: write
       id-token: write
 
   component-descriptor:
-    uses: gardener/cc-utils/.github/workflows/post-build.yaml@master
+    uses: gardener/cc-utils/.github/workflows/post-build.yaml@v1
     needs:
       - build
-    secrets: inherit
     permissions:
       id-token: write
       contents: write
