@@ -158,7 +158,6 @@ skipped_names = [
     "cluster-autoscaler/integration",
     "cluster-autoscaler/hack/local_setup.sh",
     "cluster-autoscaler/hack/sast.sh",
-
     "cluster-autoscaler/hack/tools/install-gosec.sh",
     "cluster-autoscaler/cloudprovider/ionoscloud/ionos-cloud-sdk-go",
     "cluster-autoscaler/cloudprovider/hetzner/hcloud-go",
