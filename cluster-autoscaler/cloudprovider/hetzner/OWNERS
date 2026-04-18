@@ -1,9 +1,9 @@
 approvers:
 - apricote
-- lukasmetzner
+#- lukasmetzner
 reviewers:
 - apricote
-- lukasmetzner
+#- lukasmetzner
 
 labels:
 - area/provider/hetzner
