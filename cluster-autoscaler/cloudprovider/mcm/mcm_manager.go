@@ -436,7 +436,8 @@ func (m *McmManager) getNodeGroup(machineKey types.NamespacedName) (*nodeGroup, 
 	lookupKey := types.NamespacedName{Namespace: m.namespace, Name: machineDeploymentName}
 	ng, ok := m.nodeGroups[lookupKey]
 	if !ok {
-		return nil, fmt.Errorf("could not find NodeGroup for MachineDeployment %q in the managed nodeGroups", machineDeploymentName)
+		klog.V(4).Infof("Could not find NodeGroup for MachineDeployment %q in the managed nodeGroups", machineDeploymentName)
+		return nil, nil
 	}
 	return ng, nil
 }

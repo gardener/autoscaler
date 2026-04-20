@@ -153,6 +153,9 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 	if err != nil {
 		return nil, err
 	}
+	if ng == nil {
+		return nil, nil
+	}
 
 	key := types.NamespacedName{Namespace: ng.Namespace, Name: ng.Name}
 	_, isManaged := mcm.mcmManager.nodeGroups[key]
