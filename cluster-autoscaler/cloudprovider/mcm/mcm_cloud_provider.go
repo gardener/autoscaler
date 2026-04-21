@@ -420,6 +420,12 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 			klog.V(3).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
 			continue
 		}
+		// If the machine is preserved, has no backing node object, and the VM exists, we need this case to prevent deletion of a preserved machine and the VM.
+		// This is required since there is no node object to annotate with the NoScaleDownAnnotation.
+		if mInfo.MachinePreserved {
+			klog.V(3).Infof("for NodeGroup %q, Machine %q is marked as preserved - skipping deletion", ngImpl.Name, mInfo.Key.Name)
+			continue
+		}
 		toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
 	}
 	return ngImpl.deleteMachines(toBeDeletedMachineInfos)
