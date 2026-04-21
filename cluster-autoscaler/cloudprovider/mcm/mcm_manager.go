@@ -125,9 +125,12 @@ var (
 
 	// ErrInvalidNodeTemplate is a sentinel error that indicates that the nodeTemplate is invalid.
 	ErrInvalidNodeTemplate = errors.New("invalid node template")
-	coreResourceNames      = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, "gpu"}
-	extraResourceNames     = []v1.ResourceName{gpu.ResourceNvidiaGPU, v1.ResourcePods, v1.ResourceEphemeralStorage}
-	knownResourceNames     = slices.Concat(coreResourceNames, extraResourceNames)
+	//ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
+	// because machine was preserved or because the node was annotated with scale-down-disabled=true
+	ErrNoNodesToDelete = errors.New("nodes could not be deleted due to ongoing deletion, preservation or because of scale-down-disabled annotation")
+	coreResourceNames  = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, "gpu"}
+	extraResourceNames = []v1.ResourceName{gpu.ResourceNvidiaGPU, v1.ResourcePods, v1.ResourceEphemeralStorage}
+	knownResourceNames = slices.Concat(coreResourceNames, extraResourceNames)
 )
 
 // McmManager manages the client communication for MachineDeployments.

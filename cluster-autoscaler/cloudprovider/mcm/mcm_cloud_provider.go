@@ -428,6 +428,9 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 		}
 		toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
 	}
+	if len(toBeDeletedMachineInfos) == 0 {
+		return ErrNoNodesToDelete
+	}
 	return ngImpl.deleteMachines(toBeDeletedMachineInfos)
 }
 
