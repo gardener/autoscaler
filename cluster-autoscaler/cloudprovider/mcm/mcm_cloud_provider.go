@@ -417,7 +417,7 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 			continue
 		}
 		if eligibility.HasNoScaleDownAnnotation(node) {
-			klog.V(4).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
+			klog.V(3).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
 			continue
 		}
 		toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
