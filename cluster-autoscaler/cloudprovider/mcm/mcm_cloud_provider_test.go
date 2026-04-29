@@ -315,9 +315,10 @@ func TestForceDeleteNodes(t *testing.T) {
 		nodes []*corev1.Node
 	}
 	type expect struct {
-		mdName     string
-		mdReplicas int32
-		err        error
+		mdName             string
+		mdReplicas         int32
+		deletedMachineName string
+		err                error
 	}
 	type data struct {
 		name   string
@@ -344,9 +345,10 @@ func TestForceDeleteNodes(t *testing.T) {
 			},
 			action{nodes: []*corev1.Node{newNode("node-1", "requested://machine-1")}},
 			expect{
-				mdName:     "machinedeployment-1",
-				mdReplicas: 1,
-				err:        ErrNoNodesToDelete,
+				mdName:             "machinedeployment-1",
+				mdReplicas:         1,
+				deletedMachineName: "",
+				err:                ErrNoNodesToDelete,
 			},
 		},
 		{
@@ -360,9 +362,10 @@ func TestForceDeleteNodes(t *testing.T) {
 			},
 			action{nodes: []*corev1.Node{newNode("node-1", "requested://machine-1")}},
 			expect{
-				mdName:     "machinedeployment-1",
-				mdReplicas: 0,
-				err:        nil,
+				mdName:             "machinedeployment-1",
+				mdReplicas:         0,
+				deletedMachineName: "machine-1",
+				err:                nil,
 			},
 		},
 		{
@@ -385,9 +388,10 @@ func TestForceDeleteNodes(t *testing.T) {
 				newNode("node-2", "requested://machine-2"),
 			}},
 			expect{
-				mdName:     "machinedeployment-1",
-				mdReplicas: 1,
-				err:        nil,
+				mdName:             "machinedeployment-1",
+				mdReplicas:         1,
+				deletedMachineName: "machine-2",
+				err:                nil,
 			},
 		},
 	}
@@ -418,6 +422,7 @@ func TestForceDeleteNodes(t *testing.T) {
 			machineDeployment, err := m.machineClient.MachineDeployments(m.namespace).Get(context.TODO(), entry.expect.mdName, metav1.GetOptions{})
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", entry.expect.mdReplicas))
+			g.Expect(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM]).To(ContainSubstring(entry.expect.deletedMachineName))
 		})
 	}
 }
