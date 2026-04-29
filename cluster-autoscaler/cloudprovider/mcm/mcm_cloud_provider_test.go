@@ -366,7 +366,7 @@ func TestForceDeleteNodes(t *testing.T) {
 			},
 		},
 		{
-			"should only delete non-preserved machines when mix of preserved and non-preserved unregistered nodes",
+			"should only delete non-preserved machines when there's a mix of preserved and non-preserved unregistered nodes",
 			setup{
 				nodes: nil,
 				machines: func() []*v1alpha1.Machine {
