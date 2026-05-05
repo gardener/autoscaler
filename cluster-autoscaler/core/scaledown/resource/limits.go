@@ -146,7 +146,8 @@ func (lf *LimitsFinder) customResourcesTotal(autoscalingCtx *ca_context.Autoscal
 		if !cacheHit {
 			resourceTargets, err = lf.crp.GetNodeResourceTargets(autoscalingCtx, node, nodeGroup)
 			if err != nil {
-				return nil, errors.ToAutoscalerError(errors.CloudProviderError, err).AddPrefix("cannot get custom resource count for node %v when calculating cluster custom resource usage")
+				// FORK-CHANGE: added missing format arg to fix go vet error with Go 1.26
+				return nil, errors.ToAutoscalerError(errors.CloudProviderError, err).AddPrefix("cannot get custom resource count for node %v when calculating cluster custom resource usage", node.Name)
 			}
 			if nodeGroup != nil {
 				ngCache[nodeGroup.Id()] = resourceTargets
@@ -185,7 +186,8 @@ func (lf *LimitsFinder) DeltaForNode(autoscalingCtx *ca_context.AutoscalingConte
 	if cloudprovider.ContainsCustomResources(resourcesWithLimits) {
 		resourceTargets, err := lf.crp.GetNodeResourceTargets(autoscalingCtx, node, nodeGroup)
 		if err != nil {
-			return Delta{}, errors.ToAutoscalerError(errors.CloudProviderError, err).AddPrefix("failed to get node %v custom resources: %v", node.Name)
+			// FORK-CHANGE: added missing format arg to fix go vet error with Go 1.26
+			return Delta{}, errors.ToAutoscalerError(errors.CloudProviderError, err).AddPrefix("failed to get node %v custom resources: %v", node.Name, err)
 		}
 		for _, resourceTarget := range resourceTargets {
 			resultScaleDownDelta[resourceTarget.ResourceType] = resourceTarget.ResourceCount

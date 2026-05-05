@@ -135,7 +135,8 @@ func (c *ProvisioningRequestClient) UpdateProvisioningRequest(pr *v1.Provisionin
 	if err != nil {
 		return pr, err
 	}
-	klog.V(4).Infof("Updated ProvisioningRequest %s/%s,  status: %q,", updatedPr.Namespace, updatedPr.Name, updatedPr.Status)
+	// FORK-CHANGE: %q -> %v to fix go vet format error with Go 1.26
+	klog.V(4).Infof("Updated ProvisioningRequest %s/%s,  status: %v,", updatedPr.Namespace, updatedPr.Name, updatedPr.Status)
 	return updatedPr, nil
 }
 
