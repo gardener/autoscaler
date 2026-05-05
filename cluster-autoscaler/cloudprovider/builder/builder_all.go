@@ -126,6 +126,7 @@ func buildCloudProvider(opts *coreoptions.AutoscalerOptions,
 		return externalgrpc.BuildExternalGrpc(opts, do, rl)
 	case cloudprovider.MagnumProviderName:
 		return magnum.BuildMagnum(opts, do, rl)
+	// FORK CHANGE: added MCM cloud provider.
 	case mcm.ProviderName:
 		return mcm.BuildMCM(opts.AutoscalingOptions, do, rl)
 	case cloudprovider.HuaweicloudProviderName:

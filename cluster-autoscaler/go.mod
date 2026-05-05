@@ -1,6 +1,6 @@
 module k8s.io/autoscaler/cluster-autoscaler
 
-go 1.25.0
+go 1.26.2
 
 require (
 	cloud.google.com/go/compute/metadata v0.7.0
@@ -24,7 +24,7 @@ require (
 	github.com/aws/smithy-go v1.24.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/digitalocean/godo v1.169.0
-	github.com/gardener/machine-controller-manager v0.61.3
+	github.com/gardener/machine-controller-manager v0.62.0
 	github.com/gardener/machine-controller-manager-provider-aws v0.27.3
 	github.com/gardener/machine-controller-manager-provider-azure v0.19.0
 	github.com/golang/mock v1.6.0

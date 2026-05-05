@@ -208,8 +208,8 @@ github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/fxamacker/cbor/v2 v2.9.0 h1:NpKPmjDBgUfBms6tr6JZkTHtfFGcMKsw3eGcmD/sapM=
 github.com/fxamacker/cbor/v2 v2.9.0/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
-github.com/gardener/machine-controller-manager v0.61.3 h1:w0JuHCKLmcK7B8E7mx3TvE3e0hSYwikchsMSiMhocqw=
-github.com/gardener/machine-controller-manager v0.61.3/go.mod h1:8eE1qLztrWIbOM71mHSQGaC6Q+pl5lvOyN08qP39D7o=
+github.com/gardener/machine-controller-manager v0.62.0 h1:XZWjAsXlNVj3S7M0AXcLkhNDGRRNm3Tc6ZFlTPPy3sc=
+github.com/gardener/machine-controller-manager v0.62.0/go.mod h1:ICsymXK4VHm7NVr8Mpl6USvYcTZjUNSk6+XaVu/dd74=
 github.com/gardener/machine-controller-manager-provider-aws v0.27.3 h1:rT4x2NC1kdng5KSnpZRMhDOTF20AjNJXbyEH59CMhNg=
 github.com/gardener/machine-controller-manager-provider-aws v0.27.3/go.mod h1:k4en/QvXK0r2rRrLv0b9mz6K4VQejC0FGxXfrJUkqhQ=
 github.com/gardener/machine-controller-manager-provider-azure v0.19.0 h1:6YofsISbhAyVCSwbDLrGpr7/GSR8ANsbgDZ9mo8ySFk=

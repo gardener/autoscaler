@@ -70,6 +70,11 @@ this document:
   * [How should I test my code before submitting PR?](#how-should-i-test-my-code-before-submitting-pr)
   * [How can I update CA dependencies (particularly k8s.io/kubernetes)?](#how-can-i-update-ca-dependencies-particularly-k8siokubernetes)
 * [In the context of Gardener](#in-the-context-of-gardener)
+  * [For User](#for-user)
+    * [When does autoscaler back off early from a node group?](#when-does-autoscaler-backs-off-early-from-a-node-group)
+  * [For Developer](#for-developer)
+    * [How do I sync gardener autoscaler with an upstream autoscaler minor release?](#how-do-i-sync-gardener-autoscaler-with-an-upstream-autoscaler-minor-release)
+    * [How do I revendor a different version of MCM in autoscaler?](#how-do-i-revendor-a-different-version-of-mcm-in-autoscaler)
 <!--- TOC END -->
 
 # Basics
