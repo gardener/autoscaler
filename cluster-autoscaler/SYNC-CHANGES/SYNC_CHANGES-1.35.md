@@ -13,7 +13,7 @@
 
 ## Changes made
 - See general release notes of 1.35.0: https://github.com/kubernetes/autoscaler/releases/tag/cluster-autoscaler-1.35.0
-- CA now supports overriding `max-node-provision-time` and `max-node-startup-time` per node group via `NodeGroupAutoscalingOptions`.
+- CA now supports overriding `max-node-startup-time` per node group via `NodeGroupAutoscalingOptions`.
 - New flag `--max-node-startup-time` (default 15m): the maximum time from the moment the node is registered to the time the node is ready. Can be overridden per node group.
 - New flag `--scale-from-unschedulable` (default false): when set, CA ignores a node's `.spec.unschedulable` field in node templates when considering whether to scale a node group.
 - CapacityBuffers graduated to v1beta1 and integrated with resource quotas.
