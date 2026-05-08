@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.26"
       # Maximize disk space BEFORE any tests
       # - name: Maximize build space
       #   uses: easimon/maximize-build-space@master
@@ -90,7 +90,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24.0"
+          go-version: "1.26.0"
       - uses: gardener/cc-utils/.github/actions/trusted-checkout@v1
       - name: run-check
         run: |

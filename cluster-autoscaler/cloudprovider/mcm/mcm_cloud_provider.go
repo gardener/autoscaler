@@ -153,6 +153,9 @@ func (mcm *mcmCloudProvider) NodeGroupForNode(node *apiv1.Node) (cloudprovider.N
 	if err != nil {
 		return nil, err
 	}
+	if ng == nil {
+		return nil, nil
+	}
 
 	key := types.NamespacedName{Namespace: ng.Namespace, Name: ng.Name}
 	_, isManaged := mcm.mcmManager.nodeGroups[key]
@@ -414,7 +417,7 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 			continue
 		}
 		if eligibility.HasNoScaleDownAnnotation(node) {
-			klog.V(4).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
+			klog.V(3).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
 			continue
 		}
 		toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)

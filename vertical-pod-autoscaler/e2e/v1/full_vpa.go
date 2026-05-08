@@ -26,8 +26,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/autoscaler/vertical-pod-autoscaler/e2e/utils"
 	vpa_types "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
+	"k8s.io/autoscaler/vertical-pod-autoscaler/pkg/features"
 	"k8s.io/autoscaler/vertical-pod-autoscaler/pkg/utils/test"
 	"k8s.io/kubernetes/test/e2e/framework"
 	podsecurity "k8s.io/pod-security-admission/api"
@@ -47,6 +49,14 @@ const (
 	oomTestTimeout = 8 * time.Minute
 )
 
+func init() {
+	// Dynamically register feature gates from the VPA's versioned feature gate configuration
+	// This ensures consistency with the main VPA feature gate definitions
+	if err := utilfeature.DefaultMutableFeatureGate.Add(features.MutableFeatureGate.GetAll()); err != nil {
+		panic(fmt.Sprintf("Failed to add VPA feature gates: %v", err))
+	}
+}
+
 var _ = FullVpaE2eDescribe("Pods under VPA", func() {
 	var (
 		rc *ResourceConsumer
@@ -60,9 +70,9 @@ var _ = FullVpaE2eDescribe("Pods under VPA", func() {
 	// This schedules AfterEach block that needs to run after the AfterEach above and
 	// BeforeEach that needs to run before the BeforeEach below - thus the order of these matters.
 	f := framework.NewDefaultFramework("vertical-pod-autoscaling")
-	f.NamespacePodSecurityEnforceLevel = podsecurity.LevelBaseline
+	f.NamespacePodSecurityLevel = podsecurity.LevelBaseline
 
-	ginkgo.Describe("with InPlaceOrRecreate update mode", ginkgo.Label("FG:InPlaceOrRecreate"), func() {
+	f.Describe("with InPlaceOrRecreate update mode", framework.WithFeatureGate(features.InPlaceOrRecreate), func() {
 		ginkgo.BeforeEach(func() {
 			ns := f.Namespace.Name
 			ginkgo.By("Setting up a hamster deployment")
@@ -219,7 +229,7 @@ var _ = FullVpaE2eDescribe("Pods under VPA with default recommender explicitly c
 	// This schedules AfterEach block that needs to run after the AfterEach above and
 	// BeforeEach that needs to run before the BeforeEach below - thus the order of these matters.
 	f := framework.NewDefaultFramework("vertical-pod-autoscaling")
-	f.NamespacePodSecurityEnforceLevel = podsecurity.LevelBaseline
+	f.NamespacePodSecurityLevel = podsecurity.LevelBaseline
 
 	ginkgo.BeforeEach(func() {
 		ns := f.Namespace.Name
@@ -289,7 +299,7 @@ var _ = FullVpaE2eDescribe("Pods under VPA with non-recognized recommender expli
 	// This schedules AfterEach block that needs to run after the AfterEach above and
 	// BeforeEach that needs to run before the BeforeEach below - thus the order of these matters.
 	f := framework.NewDefaultFramework("vertical-pod-autoscaling")
-	f.NamespacePodSecurityEnforceLevel = podsecurity.LevelBaseline
+	f.NamespacePodSecurityLevel = podsecurity.LevelBaseline
 
 	ginkgo.BeforeEach(func() {
 		ns := f.Namespace.Name
@@ -331,7 +341,7 @@ var _ = FullVpaE2eDescribe("Pods under VPA with non-recognized recommender expli
 
 	})
 
-	ginkgo.It("deployment not updated by non-recognized recommender", func() {
+	f.It("deployment not updated by non-recognized recommender", framework.WithSlow(), func() {
 		err := waitForResourceRequestInRangeInPods(
 			f, utils.PollTimeout, metav1.ListOptions{LabelSelector: "name=hamster"}, apiv1.ResourceCPU,
 			ParseQuantityOrDie(minimalCPULowerBound), ParseQuantityOrDie(minimalCPUUpperBound))
@@ -350,7 +360,7 @@ var _ = FullVpaE2eDescribe("OOMing pods under VPA", func() {
 	const replicas = 3
 
 	f := framework.NewDefaultFramework("vertical-pod-autoscaling")
-	f.NamespacePodSecurityEnforceLevel = podsecurity.LevelBaseline
+	f.NamespacePodSecurityLevel = podsecurity.LevelBaseline
 
 	ginkgo.BeforeEach(func() {
 		ns := f.Namespace.Name

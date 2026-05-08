@@ -53,7 +53,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/utho"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/volcengine"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/vultr"
-	"k8s.io/autoscaler/cluster-autoscaler/config"
+	coreoptions "k8s.io/autoscaler/cluster-autoscaler/core/options"
 	"k8s.io/client-go/informers"
 )
 
@@ -95,7 +95,7 @@ var AvailableCloudProviders = []string{
 // DefaultCloudProvider is GCE.
 const DefaultCloudProvider = cloudprovider.GceProviderName
 
-func buildCloudProvider(opts config.AutoscalingOptions,
+func buildCloudProvider(opts *coreoptions.AutoscalerOptions,
 	do cloudprovider.NodeGroupDiscoveryOptions,
 	rl *cloudprovider.ResourceLimiter,
 	informerFactory informers.SharedInformerFactory) cloudprovider.CloudProvider {
@@ -126,6 +126,9 @@ func buildCloudProvider(opts config.AutoscalingOptions,
 		return externalgrpc.BuildExternalGrpc(opts, do, rl)
 	case cloudprovider.MagnumProviderName:
 		return magnum.BuildMagnum(opts, do, rl)
+	// FORK CHANGE: added MCM cloud provider.
+	case mcm.ProviderName:
+		return mcm.BuildMCM(opts.AutoscalingOptions, do, rl)
 	case cloudprovider.HuaweicloudProviderName:
 		return huaweicloud.BuildHuaweiCloud(opts, do, rl)
 	case cloudprovider.OVHcloudProviderName:
@@ -136,8 +139,6 @@ func buildCloudProvider(opts config.AutoscalingOptions,
 		return equinixmetal.BuildCloudProvider(opts, do, rl)
 	case cloudprovider.ClusterAPIProviderName:
 		return clusterapi.BuildClusterAPI(opts, do, rl)
-	case mcm.ProviderName:
-		return mcm.BuildMCM(opts, do, rl)
 	case cloudprovider.IonoscloudProviderName:
 		return ionoscloud.BuildIonosCloud(opts, do, rl)
 	case cloudprovider.KamateraProviderName:

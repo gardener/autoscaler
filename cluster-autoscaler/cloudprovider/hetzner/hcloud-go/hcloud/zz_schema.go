@@ -4,10 +4,9 @@
 package hcloud
 
 import (
+	schema "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/hetzner/hcloud-go/hcloud/schema"
 	"net"
 	"time"
-
-	schema "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/hetzner/hcloud-go/hcloud/schema"
 )
 
 type converterImpl struct{}
