@@ -24,6 +24,9 @@
 - Log stream handling corrected for stderr/file-only/file+stderr modes.
 - Latency tracker: prevent metric flapping and negative latency values.
 - `MixedTemplateNodeInfoProvider` now handles `NodeGroupForNode` errors gracefully.
+- The cluster-autoscaler cloudprovider/externalgrpc `NodeGroupTemplateNodeInfoResponse` and `NodeGroupAutoscalingOptions` APIs deprecate the `nodeInfo`, `scaleDownUnneededTime`, `scaleDownUnreadyTime`, `MaxNodeProvisionTime` fields, in favor of `nodeBytes`, `scaleDownUnneededDuration`, `scaleDownUnreadyDuration`, `MaxNodeProvisionDuration` fields.
+- Introduced a new metric, tracking time to process all nodes in scale down simulations. `--max-node-skip-eval-time-tracker-enabled` flag enables the new metric.
+- Cluster Autoscaler adds a new Prometheus histogram metric (behind a feature flag): `cluster_autoscaler_node_deletion_duration_seconds` — duration from when a node is marked as unneeded until it is either deleted (`deleted="true"`) or becomes needed again (`deleted="false"`). Reported values are adjusted by subtracting the configured scale-down threshold.
 - Go version bumped to 1.26.2 (required by mcm v0.62.0).
 - `WatchListClient` feature gate set to `false` in MCM test files to prevent fake client panics (k8s 1.35 enables `WatchListClient` by default, which is incompatible with the fake clientsets used in tests).
 
