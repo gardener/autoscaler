@@ -311,6 +311,7 @@ func TestDeleteNodes(t *testing.T) {
 }
 
 func TestForceDeleteNodes(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
 	type action struct {
 		nodes []*corev1.Node
 	}
