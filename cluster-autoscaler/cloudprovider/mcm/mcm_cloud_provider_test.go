@@ -217,7 +217,7 @@ func TestDeleteNodes(t *testing.T) {
 			expect{
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        nil,
+				err:        ErrNoNodesToDelete,
 			},
 		},
 		{
@@ -233,7 +233,7 @@ func TestDeleteNodes(t *testing.T) {
 			expect{
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        nil,
+				err:        ErrNoNodesToDelete,
 			},
 		},
 		{
@@ -306,6 +306,124 @@ func TestDeleteNodes(t *testing.T) {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", entry.expect.mdReplicas))
 			g.Expect(strings.Split(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM], "~")[0]).To(Equal(strings.Split(entry.expect.machinesTriggerDeletionAnnotationValue, "~")[0]))
+		})
+	}
+}
+
+func TestForceDeleteNodes(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
+	type action struct {
+		nodes []*corev1.Node
+	}
+	type expect struct {
+		mdName             string
+		mdReplicas         int32
+		deletedMachineName string
+		err                error
+	}
+	type data struct {
+		name   string
+		setup  setup
+		action action
+		expect expect
+	}
+
+	preservedMachineStatus := &v1alpha1.MachineStatus{
+		CurrentStatus: v1alpha1.CurrentStatus{
+			PreserveExpiryTime: &metav1.Time{Time: time.Now().Add(1 * time.Hour)},
+		},
+	}
+
+	table := []data{
+		{
+			"should not delete a preserved machine whose backing node is unregistered",
+			setup{
+				nodes:              nil,
+				machines:           newMachines(1, "fakeID", preservedMachineStatus, "machinedeployment-1", "machineset-1", []string{"3"}),
+				machineSets:        newMachineSets(1, "machinedeployment-1"),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+			},
+			action{nodes: []*corev1.Node{newNode("node-1", "requested://machine-1")}},
+			expect{
+				mdName:             "machinedeployment-1",
+				mdReplicas:         1,
+				deletedMachineName: "",
+				err:                ErrNoNodesToDelete,
+			},
+		},
+		{
+			"should delete a non-preserved machine whose backing node is unregistered",
+			setup{
+				nodes:              nil,
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3"}),
+				machineSets:        newMachineSets(1, "machinedeployment-1"),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+			},
+			action{nodes: []*corev1.Node{newNode("node-1", "requested://machine-1")}},
+			expect{
+				mdName:             "machinedeployment-1",
+				mdReplicas:         0,
+				deletedMachineName: "machine-1",
+				err:                nil,
+			},
+		},
+		{
+			"should only delete non-preserved machines when there's a mix of preserved and non-preserved unregistered nodes",
+			setup{
+				nodes: nil,
+				machines: func() []*v1alpha1.Machine {
+					preserved := newMachines(1, "fakeID", preservedMachineStatus, "machinedeployment-1", "machineset-1", []string{"3"})
+					nonPreserved := newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"3"})
+					nonPreserved[0].Name = "machine-2"
+					nonPreserved[0].Spec.ProviderID = "fakeID/i2"
+					return append(preserved, nonPreserved...)
+				}(),
+				machineSets:        newMachineSets(1, "machinedeployment-1"),
+				machineDeployments: newMachineDeployments(1, 2, nil, nil, nil),
+				nodeGroups:         []string{"1:3:" + testNamespace + ".machinedeployment-1"},
+			},
+			action{nodes: []*corev1.Node{
+				newNode("node-1", "requested://machine-1"),
+				newNode("node-2", "requested://machine-2"),
+			}},
+			expect{
+				mdName:             "machinedeployment-1",
+				mdReplicas:         1,
+				deletedMachineName: "machine-2",
+				err:                nil,
+			},
+		},
+	}
+
+	for _, entry := range table {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+			stop := make(chan struct{})
+			defer close(stop)
+			controlMachineObjects, targetCoreObjects, _ := setupEnv(&entry.setup)
+			m, trackers, hasSyncedCacheFns := createMcmManager(t, stop, testNamespace, entry.setup.nodeGroups, controlMachineObjects, targetCoreObjects, nil)
+			defer trackers.Stop()
+			waitForCacheSync(t, stop, hasSyncedCacheFns)
+
+			mcd, err := buildNodeGroupFromSpec(entry.setup.nodeGroups[0], m)
+			g.Expect(err).To(BeNil())
+
+			err = mcd.ForceDeleteNodes(entry.action.nodes)
+
+			if entry.expect.err != nil {
+				g.Expect(err).To(Equal(entry.expect.err))
+			} else {
+				g.Expect(err).To(BeNil())
+			}
+
+			machineDeployment, err := m.machineClient.MachineDeployments(m.namespace).Get(context.TODO(), entry.expect.mdName, metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(machineDeployment.Spec.Replicas).To(BeNumerically("==", entry.expect.mdReplicas))
+			g.Expect(machineDeployment.Annotations[machineutils.TriggerDeletionByMCM]).To(ContainSubstring(entry.expect.deletedMachineName))
 		})
 	}
 }

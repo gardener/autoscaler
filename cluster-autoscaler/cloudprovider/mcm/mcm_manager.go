@@ -171,6 +171,7 @@ type machineInfo struct {
 	Key                 types.NamespacedName
 	NodeName            string
 	FailedOrTerminating bool
+	MachinePreserved    bool
 }
 
 func (m machineInfo) String() string {
@@ -1031,7 +1032,7 @@ func (m *McmManager) getMachineInfo(node *apiv1.Node) (*machineInfo, error) {
 
 	providerID := node.Spec.ProviderID
 	var machineName, machineNamespace string
-	var isFailedOrTerminating bool
+	var isFailedOrTerminating, machinePreserved bool
 	for _, machine := range machines {
 		machineID := strings.Split(machine.Spec.ProviderID, "/")
 		nodeID := strings.Split(node.Spec.ProviderID, "/")
@@ -1041,7 +1042,13 @@ func (m *McmManager) getMachineInfo(node *apiv1.Node) (*machineInfo, error) {
 			nodeID[len(nodeID)-1] == machine.Name {
 			machineName = machine.Name
 			machineNamespace = machine.Namespace
+			// machines that are preserved in failed phase will also have isFailedOrTerminating value set to true.
 			isFailedOrTerminating = isMachineFailedOrTerminating(machine)
+			// Here, we do not check for expiry since MCM handles the removal of preserveExpiryTime on expiry.
+			// Doing the check here and allowing deletion on expiry may lead to race conditions.
+			if !machine.Status.CurrentStatus.PreserveExpiryTime.IsZero() {
+				machinePreserved = true
+			}
 			break
 		}
 	}
@@ -1057,6 +1064,7 @@ func (m *McmManager) getMachineInfo(node *apiv1.Node) (*machineInfo, error) {
 		},
 		NodeName:            node.Name,
 		FailedOrTerminating: isFailedOrTerminating,
+		MachinePreserved:    machinePreserved,
 	}, nil
 }
 
