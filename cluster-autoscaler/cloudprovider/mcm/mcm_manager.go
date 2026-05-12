@@ -125,12 +125,9 @@ var (
 
 	// ErrInvalidNodeTemplate is a sentinel error that indicates that the nodeTemplate is invalid.
 	ErrInvalidNodeTemplate = errors.New("invalid node template")
-	//ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
-	// because machine was preserved or because the node was annotated with scale-down-disabled=true
-	ErrNoNodesToDelete = errors.New("nodes could not be deleted due to ongoing deletion, preservation or because of scale-down-disabled annotation")
-	coreResourceNames  = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, "gpu"}
-	extraResourceNames = []v1.ResourceName{gpu.ResourceNvidiaGPU, v1.ResourcePods, v1.ResourceEphemeralStorage}
-	knownResourceNames = slices.Concat(coreResourceNames, extraResourceNames)
+	coreResourceNames      = []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, "gpu"}
+	extraResourceNames     = []v1.ResourceName{gpu.ResourceNvidiaGPU, v1.ResourcePods, v1.ResourceEphemeralStorage}
+	knownResourceNames     = slices.Concat(coreResourceNames, extraResourceNames)
 )
 
 // McmManager manages the client communication for MachineDeployments.
@@ -1045,6 +1042,7 @@ func (m *McmManager) getMachineInfo(node *apiv1.Node) (*machineInfo, error) {
 			nodeID[len(nodeID)-1] == machine.Name {
 			machineName = machine.Name
 			machineNamespace = machine.Namespace
+			// machines that are preserved in failed phase will also have isFailedOrTerminating value set to true.
 			isFailedOrTerminating = isMachineFailedOrTerminating(machine)
 			// Here, we do not check for expiry since MCM handles the removal of preserveExpiryTime on expiry.
 			// Doing the check here and allowing deletion on expiry may lead to race conditions.

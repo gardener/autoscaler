@@ -23,6 +23,7 @@ package mcm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -41,7 +42,7 @@ import (
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
 	"k8s.io/autoscaler/cluster-autoscaler/simulator/framework"
-	"k8s.io/autoscaler/cluster-autoscaler/utils/errors"
+	caerrors "k8s.io/autoscaler/cluster-autoscaler/utils/errors"
 	"k8s.io/klog/v2"
 )
 
@@ -68,6 +69,10 @@ const (
 	// MaxNodeProvisionTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.MaxNodeProvisionTime
 	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
 )
+
+// ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
+// because machine was preserved or because the node was annotated with scale-down-disabled=true
+var ErrNoNodesToDelete = errors.New("no nodes deleted: all candidates skipped due to termination, preservation, or scale-down-disabled annotation")
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
 // Reference: https://github.com/gardener/machine-controller-manager
@@ -173,7 +178,7 @@ func (mcm *mcmCloudProvider) HasInstance(*apiv1.Node) (bool, error) {
 }
 
 // Pricing returns pricing model for this cloud provider or error if not available.
-func (mcm *mcmCloudProvider) Pricing() (cloudprovider.PricingModel, errors.AutoscalerError) {
+func (mcm *mcmCloudProvider) Pricing() (cloudprovider.PricingModel, caerrors.AutoscalerError) {
 	return nil, cloudprovider.ErrNotImplemented
 }
 
@@ -412,19 +417,19 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 		} else if !belongs {
 			return fmt.Errorf("%s belongs to a different MachineDeployment than %q", node.Name, ngImpl.Name)
 		}
-		if mInfo.MachinePreserved {
+		// Failed machines that are preserved are covered by the first case.
+		// If the machine is not preserved, but is in failed state, the second case is executed.
+		// The ordering of the cases needs to be maintained for accurate logging.
+		switch {
+		case mInfo.MachinePreserved:
 			klog.V(3).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked as preserved - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name)
-			continue
-		}
-		if mInfo.FailedOrTerminating {
+		case mInfo.FailedOrTerminating:
 			klog.V(3).Infof("for NodeGroup %q, Machine %q is already marked as terminating - skipping deletion", ngImpl.Name, mInfo.Key.Name)
-			continue
-		}
-		if eligibility.HasNoScaleDownAnnotation(node) {
+		case eligibility.HasNoScaleDownAnnotation(node):
 			klog.V(3).Infof("for NodeGroup %q, Node %q corresponding to Machine %q is marked with ScaleDownDisabledAnnotation %q - skipping deletion", ngImpl.Name, node.Name, mInfo.Key.Name, eligibility.ScaleDownDisabledKey)
-			continue
+		default:
+			toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
 		}
-		toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
 	}
 	if len(toBeDeletedMachineInfos) == 0 {
 		return ErrNoNodesToDelete
