@@ -137,7 +137,7 @@ func (c *client) NewRequest(method, url string, body ...interface{}) (*http.Requ
 func (c *client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+c.token)
 
-	resp, err := c.client.Do(req)
+	resp, err := c.client.Do(req) // #nosec G704 (CWE-918) -- URL is constructed internally by the Utho API client, not from user input
 	if err != nil {
 		return nil, err
 	}
