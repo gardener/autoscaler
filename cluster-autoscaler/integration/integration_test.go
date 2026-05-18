@@ -197,7 +197,9 @@ func (driver *Driver) controllerTests() {
 					driver.targetCluster.getNumberOfReadyNodes,
 					pollingTimeout,
 					pollingInterval).
-					Should(BeNumerically("==", maxNodes))
+					// getNumberOfReadyNodes counts all k8s nodes including the sys-comp node
+					// which is always present but outside CA's managed groups.
+					Should(BeNumerically("==", maxNodes+1))
 			})
 		})
 		Context("by decreasing the workload to below min", func() {
