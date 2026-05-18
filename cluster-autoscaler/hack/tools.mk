@@ -9,7 +9,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GOSEC ?= $(TOOLS_BIN_DIR)/gosec
 
 # Tool Versions
-GOSEC_VERSION ?= v2.21.4
+GOSEC_VERSION ?= v2.25.0
 
 $(GOSEC):
 	@GOSEC_VERSION=$(GOSEC_VERSION) $(TOOLS_DIR)/install-gosec.sh
