@@ -23,7 +23,6 @@ package mcm
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -69,10 +68,6 @@ const (
 	// MaxNodeProvisionTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.MaxNodeProvisionTime
 	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
 )
-
-// ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
-// because machine was preserved or because the node was annotated with scale-down-disabled=true
-var ErrNoNodesToDelete = errors.New("no nodes deleted: all candidates skipped due to termination, preservation, or scale-down-disabled annotation")
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
 // Reference: https://github.com/gardener/machine-controller-manager
@@ -433,9 +428,6 @@ func (ngImpl *nodeGroup) ForceDeleteNodes(nodes []*apiv1.Node) error {
 		default:
 			toBeDeletedMachineInfos = append(toBeDeletedMachineInfos, *mInfo)
 		}
-	}
-	if len(toBeDeletedMachineInfos) == 0 {
-		return ErrNoNodesToDelete
 	}
 	return ngImpl.deleteMachines(toBeDeletedMachineInfos)
 }
