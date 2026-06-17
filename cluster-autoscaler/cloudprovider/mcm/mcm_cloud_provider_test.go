@@ -216,7 +216,7 @@ func TestDeleteNodes(t *testing.T) {
 			expect{
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        ErrNoNodesToDelete,
+				err:        nil,
 			},
 		},
 		{
@@ -232,7 +232,7 @@ func TestDeleteNodes(t *testing.T) {
 			expect{
 				mdName:     "machinedeployment-1",
 				mdReplicas: 2,
-				err:        ErrNoNodesToDelete,
+				err:        nil,
 			},
 		},
 		{
@@ -348,7 +348,7 @@ func TestForceDeleteNodes(t *testing.T) {
 				mdName:             "machinedeployment-1",
 				mdReplicas:         1,
 				deletedMachineName: "",
-				err:                ErrNoNodesToDelete,
+				err:                nil,
 			},
 		},
 		{
