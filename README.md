@@ -9,7 +9,7 @@ Find more details about this fork in [FORK.md](./FORK.md).
 
 # Kubernetes Autoscaler
 
-[![Release Charts](https://github.com/kubernetes/autoscaler/actions/workflows/release.yaml/badge.svg)](https://github.com/kubernetes/autoscaler/actions/workflows/release.yaml) [![Tests](https://github.com/kubernetes/autoscaler/actions/workflows/ci.yaml/badge.svg)](https://github.com/kubernetes/autoscaler/actions/workflows/ci.yaml) [![GoDoc Widget]][GoDoc]
+[![Release Charts](https://github.com/kubernetes/autoscaler/actions/workflows/chart-release.yaml/badge.svg)](https://github.com/kubernetes/autoscaler/actions/workflows/chart-release.yaml) [![CA Tests](https://github.com/kubernetes/autoscaler/actions/workflows/ca-test.yaml/badge.svg)](https://github.com/kubernetes/autoscaler/actions/workflows/ca-test.yaml) [![VPA Tests](https://github.com/kubernetes/autoscaler/actions/workflows/vpa-test.yaml/badge.svg)](https://github.com/kubernetes/autoscaler/actions/workflows/vpa-test.yaml) [![GoDoc Widget]][GoDoc]
 
 This repository contains autoscaling-related components for Kubernetes.
 

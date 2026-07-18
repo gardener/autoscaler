@@ -78,8 +78,10 @@ for project_name in ${PROJECT_NAMES[*]}; do
 done;
 
 if [ "${CMD}" = "build" ] || [ "${CMD}" == "test" ]; then
-  pushd ${CONTRIB_ROOT}/vertical-pod-autoscaler/e2e
-  go test -run=None ./...
+  # FORK-CHANGE: upstream 1.36 relocated the VPA e2e module from e2e/ to test/
+  # Exclude test/integration which requires etcd at TestMain init time (even with -run=None)
+  pushd ${CONTRIB_ROOT}/vertical-pod-autoscaler/test
+  go test -run=None $(go list ./... | grep -v integration)
   popd
   pushd ${CONTRIB_ROOT}/cluster-autoscaler/
   # TODO: #8127 - Use default analyzers set by `go test` to include `printf` analyzer.

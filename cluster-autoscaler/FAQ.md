@@ -26,7 +26,7 @@ this document:
   * [Is Cluster Autoscaler compatible with CPU-usage-based node autoscalers?](#is-cluster-autoscaler-compatible-with-cpu-usage-based-node-autoscalers)
   * [How does Cluster Autoscaler work with Pod Priority and Preemption?](#how-does-cluster-autoscaler-work-with-pod-priority-and-preemption)
   * [How does Cluster Autoscaler remove nodes?](#how-does-cluster-autoscaler-remove-nodes)
-  * [How does Cluster Autoscaler treat nodes with status/startup/ignore taints?](#how-does-cluster-autoscaler-treat-nodes-with-taints)
+  * [How does Cluster Autoscaler treat nodes with status/startup/ignore taints?](#how-does-cluster-autoscaler-treat-nodes-with-statusstartupignore-taints)
 * [How to?](#how-to)
   * [I'm running cluster with nodes in multiple zones for HA purposes. Is that supported by Cluster Autoscaler?](#im-running-cluster-with-nodes-in-multiple-zones-for-ha-purposes-is-that-supported-by-cluster-autoscaler)
   * [How can I monitor Cluster Autoscaler?](#how-can-i-monitor-cluster-autoscaler)
@@ -42,6 +42,7 @@ this document:
   * [How can I enable/disable eviction for a specific DaemonSet](#how-can-i-enabledisable-eviction-for-a-specific-daemonset)
   * [How can I enable Cluster Autoscaler to scale up when Node's max volume count is exceeded (CSI migration enabled)?](#how-can-i-enable-cluster-autoscaler-to-scale-up-when-nodes-max-volume-count-is-exceeded-csi-migration-enabled)
   * [How can I use ProvisioningRequest to run batch workloads?](#how-can-i-use-provisioningrequest-to-run-batch-workloads)
+  * [How can I enable scale-up when a CSI driver uses node-specific CSIStorageCapacity objects?](#how-can-i-enable-scale-up-when-a-csi-driver-uses-node-specific-csistoragecapacity-objects)
 * [Internals](#internals)
   * [Are all of the mentioned heuristics and timings final?](#are-all-of-the-mentioned-heuristics-and-timings-final)
   * [How does scale-up work?](#how-does-scale-up-work)
@@ -283,6 +284,8 @@ might stop working as it might assume the cluster is broken and should not be sc
 Startup taints are defined as:
 
 * all taints with the prefix `startup-taint.cluster-autoscaler.kubernetes.io/`,
+* all taints with the prefix `ignore-taint.cluster-autoscaler.kubernetes.io/` (deprecated),
+* all taints with prefixes specified using `--startup-taint-prefix` flag,
 * all taints defined using `--startup-taint` flag.
 
 ### Status taints
@@ -635,7 +638,7 @@ When using this class, Cluster Autoscaler performs following actions:
   Adds a Provisioned=True condition to the ProvReq if capacity is available.
   Adds a BookingExpired=True condition when the 10-minute reservation period expires.
 
-  Since Cluster Autoscaler version 1.33, it is possible to configure the autoscaler 
+  Since Cluster Autoscaler version 1.33, it is possible to configure the autoscaler
   to process only subset of check capacity ProvisioningRequests and ignore the rest.
   It should be done with caution by specifying `--check-capacity-processor-instance=<name>` flag.
   Then, ProvReq Parameters map should contain a key "processorInstance" with a value equal to the configured instance name.
@@ -760,6 +763,18 @@ Autoscaler configuration:
 spend processing CheckCapacity ProvisioningRequests in a single iteration by
 setting the following flag in your Cluster Autoscaler configuration:
 `--check-capacity-provisioning-request-batch-timebox=<timebox>`. The default value is 10s.
+
+### How can I enable scale-up when a CSI driver uses node-specific CSIStorageCapacity objects?
+
+Some CSI drivers publish `CSIStorageCapacity` objects with node-specific topology keys (e.g.
+`kubernetes.io/hostname=<node-name>`). During scale-up simulation, Cluster Autoscaler creates a
+template node based on an existing node. Because no `CSIStorageCapacity` object exists for this
+template node, the scheduler's storage capacity check fails during simulation and scale-up is
+blocked (see [#9700](https://github.com/kubernetes/autoscaler/issues/9700)).
+
+For mitigating issues like this, Cluster Autoscaler adds the label `cluster-autoscaler.kubernetes.io/template-node=true`
+to template nodes. CSI storage vendors can use this label to create a dedicated `CSIStorageCapacity`
+object that matches template nodes, allowing the scale-up simulation to succeed.
 
 ****************
 

@@ -1,0 +1,8 @@
+./MIGRATE.md
+./charts/vertical-pod-autoscaler/README.md
+./charts/README.md
+./docs/api.md
+./enhancements/README.md
+./enhancements/7862-cpu-startup-boost/README.md
+./hack/local-cluster.md
+./RELEASE.md

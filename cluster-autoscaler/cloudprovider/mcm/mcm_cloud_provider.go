@@ -40,11 +40,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
+	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/builder"
 	"k8s.io/autoscaler/cluster-autoscaler/config"
+	coreoptions "k8s.io/autoscaler/cluster-autoscaler/core/options"
 	"k8s.io/autoscaler/cluster-autoscaler/simulator/framework"
 	caerrors "k8s.io/autoscaler/cluster-autoscaler/utils/errors"
+	"k8s.io/client-go/informers"
 	"k8s.io/klog/v2"
 )
+
+func init() {
+	builder.RegisterCloudProvider(ProviderName, func(opts *coreoptions.AutoscalerOptions, do cloudprovider.NodeGroupDiscoveryOptions, rl *cloudprovider.ResourceLimiter, _ informers.SharedInformerFactory) cloudprovider.CloudProvider {
+		return BuildMCM(opts.AutoscalingOptions, do, rl)
+	})
+	builder.SetDefaultCloudProvider(ProviderName)
+}
 
 const (
 	// ProviderName is the cloud provider name for MCM
@@ -579,9 +589,9 @@ func (ngImpl *nodeGroup) TemplateNodeInfo() (*framework.NodeInfo, error) {
 		return nil, err
 	}
 
-	nodeInfo := framework.NewNodeInfo(node, nil, &framework.PodInfo{
-		Pod: cloudprovider.BuildKubeProxy(ngImpl.Name),
-	})
+	// FORK-CHANGE: use framework.NewPodInfo (not &framework.PodInfo{}) to avoid nil
+	// dereference in AddPodInfo when upstream 1.36's DRA processor calls TemplateNodeInfo.
+	nodeInfo := framework.NewNodeInfo(node, nil, framework.NewPodInfo(cloudprovider.BuildKubeProxy(ngImpl.Name), nil))
 
 	nodeInfo.SetNode(node)
 	return nodeInfo, nil

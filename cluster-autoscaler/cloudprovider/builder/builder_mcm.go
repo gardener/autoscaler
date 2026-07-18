@@ -1,5 +1,5 @@
-//go:build aws
-// +build aws
+//go:build mcm
+// +build mcm
 
 /*
 Copyright 2018 The Kubernetes Authors.
@@ -17,28 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package builder is intentionally minimal for the MCM provider.
+// MCM self-registers via its init() in cloudprovider/mcm, triggered by
+// cloudprovider/router/router_mcm.go when built with the 'mcm' tag.
 package builder
-
-import (
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider"
-	"k8s.io/autoscaler/cluster-autoscaler/cloudprovider/mcm"
-	coreoptions "k8s.io/autoscaler/cluster-autoscaler/core/options"
-	"k8s.io/client-go/informers"
-)
-
-// AvailableCloudProviders supported by the cloud provider builder.
-var AvailableCloudProviders = []string{
-	cloudprovider.MCMProviderName,
-}
-
-// DefaultCloudProvider for AWS-only build is AWS.
-const DefaultCloudProvider = cloudprovider.MCMProviderName
-
-func buildCloudProvider(opts *coreoptions.AutoscalerOptions, do cloudprovider.NodeGroupDiscoveryOptions, rl *cloudprovider.ResourceLimiter, _ informers.SharedInformerFactory) cloudprovider.CloudProvider {
-	switch opts.CloudProviderName {
-	case cloudprovider.MCMProviderName:
-		return mcm.BuildMCM(opts.AutoscalingOptions, do, rl)
-	}
-
-	return nil
-}
