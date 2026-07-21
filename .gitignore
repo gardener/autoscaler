@@ -44,3 +44,7 @@ vertical-pod-autoscaler/e2e/v1*/workspace/
 
 # git mergetool created files
 *.orig
+
+# Claude Code AI assistant files — local only, not for version control
+.claude/
+CLAUDE.md
