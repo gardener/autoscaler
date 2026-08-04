@@ -589,8 +589,8 @@ func (ngImpl *nodeGroup) TemplateNodeInfo() (*framework.NodeInfo, error) {
 		return nil, err
 	}
 
-	// FORK-CHANGE: use framework.NewPodInfo (not &framework.PodInfo{}) to avoid nil
-	// dereference in AddPodInfo when upstream 1.36's DRA processor calls TemplateNodeInfo.
+	// Use framework.NewPodInfo instead of &framework.PodInfo{} to avoid nil pointer
+	// dereference in AddPodInfo when the DRA processor calls TemplateNodeInfo.
 	nodeInfo := framework.NewNodeInfo(node, nil, framework.NewPodInfo(cloudprovider.BuildKubeProxy(ngImpl.Name), nil))
 
 	nodeInfo.SetNode(node)

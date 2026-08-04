@@ -20,6 +20,7 @@ limitations under the License.
 package router
 
 import (
-	// Blank import to register the MCM cloud provider.
+	// Blank import to register a cloudprovider outside main or test package.
+	// This is by design.
 	_ "k8s.io/autoscaler/cluster-autoscaler/cloudprovider/mcm"
 )
