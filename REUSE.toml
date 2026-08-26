@@ -12,13 +12,13 @@ SPDX-License-Identifier = "Apache-2.0"
 [[annotations]]
 path = [".ci/**", "cluster-autoscaler/cloudprovider/mcm/test_utils.go", "cluster-autoscaler/cloudprovider/mcm/mcm_cloud_provider_test.go", "cluster-autoscaler/cloudprovider/mcm/machine_client_builder.go", "cluster-autoscaler/cloudprovider/mcm/fakeclient/client.go"]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2024 SAP SE or an SAP affiliate company and Gardener contributors"
+SPDX-FileCopyrightText = "Copyright Contributors to the Gardener project"
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
 path = ["CONTRIBUTING.md", "FORK.md"]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2024 SAP SE or an SAP affiliate company and Gardener contributors"
+SPDX-FileCopyrightText = "Copyright Contributors to the Gardener project"
 SPDX-License-Identifier = "CC-BY-4.0"
 
 [[annotations]]
