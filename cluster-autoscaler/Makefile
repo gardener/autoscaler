@@ -85,7 +85,8 @@ test-controllers: setup-envtest clean build
 	ginkgo --race --vet="${GO_TEST_DEFAULT_ANALYZERS}" ${TAGS_FLAG} ./test/integration/controllers/...
 
 test-ci: setup-envtest
-	go test -race ./... -vet="${GO_TEST_DEFAULT_ANALYZERS}" ${TAGS_FLAG}
+	# FORK-CHANGE: exclude integration tests (require a live cluster)
+	go test -race $(shell go list ./... | grep -v integration) -vet="${GO_TEST_DEFAULT_ANALYZERS}" ${TAGS_FLAG}
 
 benchmark:
 	go test ./... -bench=. -run='^$$' -vet="${GO_TEST_DEFAULT_ANALYZERS}"

@@ -35,8 +35,5 @@ jobs:
         run: sudo apt-get install libseccomp-dev -qq
 
       - name: Test
-        working-directory: ${{ env.GOPATH }}/src/k8s.io/autoscaler
-        run: hack/go-unit-tests-ca.sh
-        env:
-          GO111MODULE: auto
-          PROJECT_NAMES: ""
+        working-directory: ${{ env.GOPATH }}/src/k8s.io/autoscaler/cluster-autoscaler
+        run: make test-ci
