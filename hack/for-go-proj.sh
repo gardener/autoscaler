@@ -78,15 +78,15 @@ for project_name in ${PROJECT_NAMES[*]}; do
 done;
 
 if [ "${CMD}" = "build" ] || [ "${CMD}" == "test" ]; then
-  pushd ${CONTRIB_ROOT}/vertical-pod-autoscaler/e2e
-  go test -run=None ./...
+  # Exclude test/integration which requires etcd at TestMain init time (even with -run=None)
+  pushd ${CONTRIB_ROOT}/vertical-pod-autoscaler/test
+  go test -run=None $(go list ./... | grep -v integration)
   popd
   pushd ${CONTRIB_ROOT}/cluster-autoscaler/
   # TODO: #8127 - Use default analyzers set by `go test` to include `printf` analyzer.
   # Default analyzers that go test runs according to https://github.com/golang/go/blob/52624e533fe52329da5ba6ebb9c37712048168e0/src/cmd/go/internal/test/test.go#L649
   # This doesn't include the `printf` analyzer until cluster-autoscaler libraries are updated.
   ANALYZERS="atomic,bool,buildtags,directive,errorsas,ifaceassert,nilfunc,slog,stringintconv,tests"
-  # FORK-CHANGE: do not run integration tests here
   go test $(go list ./... | grep -v integration) -vet="${ANALYZERS}"
   popd
 fi

@@ -34,6 +34,7 @@ fi
 cd ${SOURCE_PATH}/cluster-autoscaler
 # ldflags used, same as Makefile , this reduces size of binary considerably
 CGO_ENABLED=0 GO111MODULE=on go build --ldflags="-s -w" \
+  -tags mcm \
   -v \
   -o ${BINARY_PATH}/cluster-autoscaler/cluster-autoscaler \
   main.go
