@@ -16,7 +16,7 @@ limitations under the License.
 This file was copied and modified from the kubernetes/autoscaler project
 https://github.com/kubernetes/autoscaler/blob/cluster-autoscaler-release-1.1/cluster-autoscaler/cloudprovider/aws/aws_cloud_provider.go
 
-Modifications Copyright (c) 2017 SAP SE or an SAP affiliate company. All rights reserved.
+Modifications Contributors to the Gardener project
 */
 
 package mcm
