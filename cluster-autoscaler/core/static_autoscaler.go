@@ -450,14 +450,14 @@ func (a *StaticAutoscaler) RunOnce(currentTime time.Time) caerrors.AutoscalerErr
 	unregisteredNodes := a.clusterStateRegistry.GetUnregisteredNodes()
 	if len(unregisteredNodes) > 0 {
 		klog.V(1).Infof("%d unregistered nodes present", len(unregisteredNodes))
-		removedAny, err := a.removeOldUnregisteredNodes(unregisteredNodes,
+		// FORK-CHANGE: the log "Some unregistered nodes were removed" conditioned upon the bool value returned from`removeOldUnregisteredNodes`
+		// has been removed. In some cases (e.g: when the machine is preserved), the node deletion will not succeed.
+		// However, the function would still return `true` – causing the misleading log to be printed.
+		_, err := a.removeOldUnregisteredNodes(unregisteredNodes,
 			a.clusterStateRegistry, currentTime, autoscalingCtx.LogRecorder)
 		// There was a problem with removing unregistered nodes. Retry in the next loop.
 		if err != nil {
 			klog.Warningf("Failed to remove unregistered nodes: %v", err)
-		}
-		if removedAny {
-			klog.V(0).Infof("Some unregistered nodes were removed")
 		}
 	}
 
