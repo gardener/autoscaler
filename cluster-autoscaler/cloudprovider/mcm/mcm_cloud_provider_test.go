@@ -614,8 +614,7 @@ func TestNodes(t *testing.T) {
 					{placeholderInstanceIDForMachineObj("machine-with-vm-but-no-node"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-creating"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
 					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-out-of-quota"), cloudprovider.InstanceCreating, cloudprovider.OutOfResourcesErrorClass, machinecodes.ResourceExhausted.String(), outOfQuotaMachineStatusErrorDescription},
-					// invalid credentials error is mapped to Internal code as it can't be fixed by trying another zone
-					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceState(-1), cloudprovider.InstanceErrorClass(-1), "", ""},
+					{placeholderInstanceIDForMachineObj("machine-with-vm-create-error-invalid-credentials"), cloudprovider.InstanceCreating, cloudprovider.OtherErrorClass, machinecodes.Internal.String(), invalidCredentialsMachineStatusErrorDescription},
 				},
 			},
 		},
@@ -808,6 +807,151 @@ func TestGetOptions(t *testing.T) {
 				g.Expect(*options).To(HaveField("ScaleDownUnneededTime", entry.expect.ngOptions.ScaleDownUnneededTime))
 				g.Expect(*options).To(HaveField("ScaleDownUnreadyTime", entry.expect.ngOptions.ScaleDownUnreadyTime))
 				g.Expect(*options).To(HaveField("MaxNodeProvisionTime", entry.expect.ngOptions.MaxNodeProvisionTime))
+			}
+		})
+	}
+}
+
+func TestGenerateInstanceStatus(t *testing.T) {
+	type expect struct {
+		instanceStatus *cloudprovider.InstanceStatus
+	}
+	type data struct {
+		name    string
+		machine *v1alpha1.Machine
+		expect  expect
+	}
+	table := []data{
+		{
+			"should return InstanceStatus with OutOfResourcesErrorClass for ResourceExhausted create failure",
+			&v1alpha1.Machine{
+				Status: v1alpha1.MachineStatus{
+					LastOperation: v1alpha1.LastOperation{
+						Type:        v1alpha1.MachineOperationCreate,
+						State:       v1alpha1.MachineStateFailed,
+						ErrorCode:   machinecodes.ResourceExhausted.String(),
+						Description: "quota exceeded",
+					},
+				},
+			},
+			expect{
+				instanceStatus: &cloudprovider.InstanceStatus{
+					State: cloudprovider.InstanceCreating,
+					ErrorInfo: &cloudprovider.InstanceErrorInfo{
+						ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
+						ErrorCode:    machinecodes.ResourceExhausted.String(),
+						ErrorMessage: "quota exceeded",
+					},
+				},
+			},
+		},
+		{
+			"should return InstanceStatus with OtherErrorClass for Internal create failure",
+			&v1alpha1.Machine{
+				Status: v1alpha1.MachineStatus{
+					LastOperation: v1alpha1.LastOperation{
+						Type:        v1alpha1.MachineOperationCreate,
+						State:       v1alpha1.MachineStateFailed,
+						ErrorCode:   machinecodes.Internal.String(),
+						Description: "user is not authorized",
+					},
+				},
+			},
+			expect{
+				instanceStatus: &cloudprovider.InstanceStatus{
+					State: cloudprovider.InstanceCreating,
+					ErrorInfo: &cloudprovider.InstanceErrorInfo{
+						ErrorClass:   cloudprovider.OtherErrorClass,
+						ErrorCode:    machinecodes.Internal.String(),
+						ErrorMessage: "user is not authorized",
+					},
+				},
+			},
+		},
+		{
+			"should return InstanceStatus with OtherErrorClass for DeadlineExceeded create failure",
+			&v1alpha1.Machine{
+				Status: v1alpha1.MachineStatus{
+					LastOperation: v1alpha1.LastOperation{
+						Type:        v1alpha1.MachineOperationCreate,
+						State:       v1alpha1.MachineStateFailed,
+						ErrorCode:   machinecodes.DeadlineExceeded.String(),
+						Description: "deadline exceeded while creating machine",
+					},
+				},
+			},
+			expect{
+				instanceStatus: &cloudprovider.InstanceStatus{
+					State: cloudprovider.InstanceCreating,
+					ErrorInfo: &cloudprovider.InstanceErrorInfo{
+						ErrorClass:   cloudprovider.OtherErrorClass,
+						ErrorCode:    machinecodes.DeadlineExceeded.String(),
+						ErrorMessage: "deadline exceeded while creating machine",
+					},
+				},
+			},
+		},
+		{
+			"should return InstanceStatus without ErrorInfo for non-failed create operation",
+			&v1alpha1.Machine{
+				Status: v1alpha1.MachineStatus{
+					LastOperation: v1alpha1.LastOperation{
+						Type:  v1alpha1.MachineOperationCreate,
+						State: v1alpha1.MachineStateProcessing,
+					},
+				},
+			},
+			expect{
+				instanceStatus: &cloudprovider.InstanceStatus{
+					State: cloudprovider.InstanceCreating,
+				},
+			},
+		},
+		{
+			"should return nil for non-create operation",
+			&v1alpha1.Machine{
+				Status: v1alpha1.MachineStatus{
+					LastOperation: v1alpha1.LastOperation{
+						Type:      v1alpha1.MachineOperationDelete,
+						State:     v1alpha1.MachineStateFailed,
+						ErrorCode: machinecodes.Internal.String(),
+					},
+				},
+			},
+			expect{
+				instanceStatus: nil,
+			},
+		},
+		{
+			"should return nil for zero-value last operation",
+			&v1alpha1.Machine{},
+			expect{
+				instanceStatus: nil,
+			},
+		},
+	}
+
+	for _, entry := range table {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			t.Parallel()
+			g := NewWithT(t)
+
+			status := generateInstanceStatus(entry.machine)
+
+			if entry.expect.instanceStatus == nil {
+				g.Expect(status).To(BeNil())
+			} else {
+				g.Expect(status).ToNot(BeNil())
+				g.Expect(status.State).To(Equal(entry.expect.instanceStatus.State))
+				if entry.expect.instanceStatus.ErrorInfo == nil {
+					g.Expect(status.ErrorInfo).To(BeNil())
+				} else {
+					g.Expect(status.ErrorInfo).ToNot(BeNil())
+					g.Expect(status.ErrorInfo.ErrorClass).To(Equal(entry.expect.instanceStatus.ErrorInfo.ErrorClass))
+					g.Expect(status.ErrorInfo.ErrorCode).To(Equal(entry.expect.instanceStatus.ErrorInfo.ErrorCode))
+					g.Expect(status.ErrorInfo.ErrorMessage).To(Equal(entry.expect.instanceStatus.ErrorInfo.ErrorMessage))
+				}
 			}
 		})
 	}
