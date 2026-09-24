@@ -82,8 +82,6 @@ const (
 	VultrProviderName = "vultr"
 	// PacketProviderName gets the provider name of packet
 	PacketProviderName = "packet"
-	// EquinixMetalProviderName gets the provider name of equinixmetal
-	EquinixMetalProviderName = "equinixmetal"
 	// TencentcloudProviderName gets the provider name of tencentcloud
 	TencentcloudProviderName = "tencentcloud"
 	// ExternalGrpcProviderName gets the provider name of the external grpc provider

@@ -50,7 +50,6 @@ dir_to_exclude="-exclude-dir=cloudprovider/alicloud
 -exclude-dir=cloudprovider/clusterapi
 -exclude-dir=cloudprovider/coreweave
 -exclude-dir=cloudprovider/digitalocean
--exclude-dir=cloudprovider/equinixmetal
 -exclude-dir=cloudprovider/exoscale
 -exclude-dir=cloudprovider/externalgrpc
 -exclude-dir=cloudprovider/gce

@@ -24,7 +24,6 @@
 - FAQ added in the troubleshooting section -  My cluster is below minimum / above maximum number of nodes, but CA did not fix that! Why?
 - FAQ added in the developer section - What go version should be used to compile CA?
 - yaml file changes in the FAQ - configuring overprovisioning with CA.
-- price expander works for Equinix metal and not Packet.
 - some addition to the answer for FAQ - CA used to work yesterday but not today, why?
 
 

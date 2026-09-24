@@ -261,7 +261,7 @@ download-kubeconfigs:
 	read SEED; \
 	echo "enter shoot name"; \
 	read SHOOT; \
-	echo "enter cluster provider(gcp|aws|azure|vsphere|openstack|alicloud|metal|equinix-metal)"; \
+	echo "enter cluster provider(gcp|aws|azure|vsphere|openstack|alicloud|metal)"; \
 	read PROVIDER; \
 	echo "enter zone with zero nodes in worker pool \"three-zones\" where the PV needs to be created to perform test (e.g.: eu-west-1a)"; \
 	read ZONE; \
