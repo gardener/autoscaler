@@ -77,6 +77,11 @@ const (
 
 	// MaxNodeProvisionTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.MaxNodeProvisionTime
 	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
+
+	// MachineEffectiveCreationTimeoutAnnotation is the annotation key set on the MachineDeployment that indicates
+	// the effective-creation-timeout for all Machine's belonging to this MachineDeployment. If specified, the value for this
+	// annotation takes precedence over the MachineDeployment.Spec.Template.Spec.MachineCreationTimeout.
+	MachineEffectiveCreationTimeoutAnnotation = "node.machine.sapcloud.io/effective-creation-timeout"
 )
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
@@ -560,9 +565,14 @@ func (ngImpl *nodeGroup) GetOptions(defaults config.NodeGroupAutoscalingOptions)
 			options.ScaleDownUnreadyTime = durationVal
 		}
 	}
-	if _, ok := mcdAnnotations[MaxNodeProvisionTimeAnnotation]; ok {
+	if _, ok := mcdAnnotations[MaxNodeProvisionTimeAnnotation]; ok { // deprecated: will be removed in future release.
 		if durationVal, err := time.ParseDuration(mcdAnnotations[MaxNodeProvisionTimeAnnotation]); err == nil {
 			options.MaxNodeProvisionTime = durationVal
+		}
+	}
+	if _, ok := mcdAnnotations[MachineEffectiveCreationTimeoutAnnotation]; ok {
+		if durationVal, err := time.ParseDuration(mcdAnnotations[MachineEffectiveCreationTimeoutAnnotation]); err == nil {
+			options.MaxNodeProvisionTime = durationVal // always override MaxNodeProvisionTimeAnnotation if set
 		}
 	}
 	return &options, nil
