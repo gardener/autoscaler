@@ -31,6 +31,8 @@ import (
 	"time"
 
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/autoscaler/cluster-autoscaler/core/scaledown/eligibility"
 
@@ -218,6 +220,26 @@ func (mcm *mcmCloudProvider) checkMCMAvailableReplicas() error {
 	return nil
 }
 
+func (mcm *mcmCloudProvider) checkMachineDeploymentsForCredentialIssues() error {
+	mcds, err := mcm.mcmManager.machineDeploymentLister.MachineDeployments(mcm.mcmManager.namespace).List(labels.Everything())
+	if err != nil {
+		return fmt.Errorf("failed to list machine deployments: %w", err)
+	}
+
+	for _, mcd := range mcds {
+		for _, failedMachine := range mcd.Status.FailedMachines {
+			if failedMachine == nil {
+				continue
+			}
+			if failedMachine.LastOperation.ErrorCode == codes.Unauthenticated.String() {
+				return fmt.Errorf("machine %s has credential issues. Cluster autoscaler operations would be suspended for this cluster.", failedMachine.Name)
+			}
+		}
+	}
+
+	return nil
+}
+
 // Refresh is called before every main loop and can be used to dynamically update cloud provider state.
 // In particular the list of node groups returned by NodeGroups can change as a result of CloudProvider.Refresh().
 func (mcm *mcmCloudProvider) Refresh() error {
@@ -225,6 +247,12 @@ func (mcm *mcmCloudProvider) Refresh() error {
 	if err != nil {
 		return err
 	}
+	// Check here to see if there are any machines that are failing with credential issues. If so, return an error to suspend CA operations.
+	err = mcm.checkMachineDeploymentsForCredentialIssues()
+	if err != nil {
+		return err
+	}
+
 	return mcm.mcmManager.Refresh()
 }
 

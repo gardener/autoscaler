@@ -523,6 +523,64 @@ func TestRefresh(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			"should return an error if a failed machine has credential issues",
+			setup{
+				nodes:    newNodes(1, "fakeID"),
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: newMachineDeployments(1, 1, &v1alpha1.MachineDeploymentStatus{
+					FailedMachines: []*v1alpha1.MachineSummary{
+						{
+							Name:          "machine-1",
+							LastOperation: v1alpha1.LastOperation{ErrorCode: machinecodes.Unauthenticated.String()},
+						},
+					},
+				}, nil, nil),
+				nodeGroups:    []string{nodeGroup2},
+				mcmDeployment: newMCMDeployment(1),
+			},
+			expect{
+				err: fmt.Errorf("machine %s has credential issues. Cluster autoscaler operations would be suspended for this cluster.", "machine-1"),
+			},
+		},
+		{
+			"should not return an error if a failed machine has a non-credential error code",
+			setup{
+				nodes:    newNodes(1, "fakeID"),
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: newMachineDeployments(1, 1, &v1alpha1.MachineDeploymentStatus{
+					FailedMachines: []*v1alpha1.MachineSummary{
+						{
+							Name:          "machine-1",
+							LastOperation: v1alpha1.LastOperation{ErrorCode: machinecodes.ResourceExhausted.String()},
+						},
+					},
+				}, nil, nil),
+				nodeGroups:    []string{nodeGroup2},
+				mcmDeployment: newMCMDeployment(1),
+			},
+			expect{
+				err: nil,
+			},
+		},
+		{
+			"should not panic or return an error if FailedMachines contains nil entries",
+			setup{
+				nodes:    newNodes(1, "fakeID"),
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: newMachineDeployments(1, 1, &v1alpha1.MachineDeploymentStatus{
+					FailedMachines: []*v1alpha1.MachineSummary{
+						nil,
+						nil,
+					},
+				}, nil, nil),
+				nodeGroups:    []string{nodeGroup2},
+				mcmDeployment: newMCMDeployment(1),
+			},
+			expect{
+				err: nil,
+			},
+		},
 	}
 	for _, entry := range table {
 		entry := entry
