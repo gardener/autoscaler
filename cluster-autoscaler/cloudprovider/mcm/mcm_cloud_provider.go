@@ -23,6 +23,7 @@ package mcm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -31,6 +32,7 @@ import (
 	"time"
 
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	"github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/autoscaler/cluster-autoscaler/core/scaledown/eligibility"
 
@@ -78,6 +80,13 @@ const (
 	// MaxNodeProvisionTimeAnnotation is the annotation key for the value of NodeGroupAutoscalingOptions.MaxNodeProvisionTime
 	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
 )
+
+// ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
+// because machine was preserved or because the node was annotated with scale-down-disabled=true
+var ErrNoNodesToDelete = errors.New("no nodes deleted: all candidates skipped due to termination, preservation, or scale-down-disabled annotation")
+
+// ErrSuspendScaling is returned when a condition is detected that requires suspending all CA scaling operations (e.g., machines having credential issues).
+var ErrSuspendScaling = errors.New("cluster autoscaler scaling operations suspended")
 
 // MCMCloudProvider implements the cloud provider interface for machine-controller-manager
 // Reference: https://github.com/gardener/machine-controller-manager
@@ -350,6 +359,10 @@ func (ngImpl *nodeGroup) Refresh() error {
 	if err != nil {
 		return err
 	}
+	err = checkMachineDeploymentForCredentialIssues(mcd)
+	if err != nil {
+		return fmt.Errorf("%w: %w", err, ErrSuspendScaling)
+	}
 	toBeDeletedMachineNames := getMachineNamesTriggeredForDeletion(mcd)
 	if len(toBeDeletedMachineNames) == 0 {
 		return nil
@@ -617,4 +630,17 @@ func getMachineNamesTriggeredForDeletion(mcd *v1alpha1.MachineDeployment) []stri
 func createMachinesTriggeredForDeletionAnnotValue(machineNames []string, timestamp string) string {
 	slices.Sort(machineNames)
 	return strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
+}
+
+func checkMachineDeploymentForCredentialIssues(mcd *v1alpha1.MachineDeployment) error {
+	for _, failedMachine := range mcd.Status.FailedMachines {
+		if failedMachine == nil {
+			continue
+		}
+		if failedMachine.LastOperation.ErrorCode == codes.Unauthenticated.String() {
+			return fmt.Errorf("machine %s has credential issues", failedMachine.Name)
+		}
+	}
+
+	return nil
 }

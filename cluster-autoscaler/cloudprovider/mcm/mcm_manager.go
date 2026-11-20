@@ -447,7 +447,11 @@ func (m *McmManager) getNodeGroup(machineKey types.NamespacedName) (*nodeGroup, 
 func (m *McmManager) Refresh() error {
 	var collectiveError []error
 	for _, ng := range m.nodeGroups {
-		collectiveError = append(collectiveError, ng.Refresh())
+		err := ng.Refresh()
+		if errors.Is(err, ErrSuspendScaling) {
+			return err
+		}
+		collectiveError = append(collectiveError, err)
 	}
 	return errors.Join(collectiveError...)
 }
