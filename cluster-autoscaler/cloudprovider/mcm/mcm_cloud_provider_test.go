@@ -464,6 +464,7 @@ func TestRefresh(t *testing.T) {
 		prio3Machines                          []string
 		machinesTriggerDeletionAnnotationValue string
 		err                                    error
+		isSuspendScalingErr                    bool
 	}
 	type data struct {
 		name   string
@@ -540,7 +541,7 @@ func TestRefresh(t *testing.T) {
 				mcmDeployment: newMCMDeployment(1),
 			},
 			expect{
-				err: fmt.Errorf("machine %s has credential issues. Cluster autoscaler operations would be suspended for this cluster.", "machine-1"),
+				isSuspendScalingErr: true,
 			},
 		},
 		{
@@ -603,7 +604,9 @@ func TestRefresh(t *testing.T) {
 			mcmCloudProvider, err := BuildMcmCloudProvider(m, nil)
 			g.Expect(err).To(BeNil())
 			err = mcmCloudProvider.Refresh()
-			if entry.expect.err != nil {
+			if entry.expect.isSuspendScalingErr {
+				g.Expect(errors.Is(err, ErrSuspendScaling)).To(BeTrue())
+			} else if entry.expect.err != nil {
 				g.Expect(err).To(Equal(entry.expect.err))
 			} else {
 				g.Expect(err).To(BeNil())

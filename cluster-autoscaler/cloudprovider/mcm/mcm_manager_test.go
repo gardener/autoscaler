@@ -18,6 +18,7 @@ package mcm
 
 import (
 	"errors"
+	"fmt"
 	"maps"
 	"math/rand/v2"
 	"strings"
@@ -25,9 +26,12 @@ import (
 	"time"
 
 	"github.com/gardener/machine-controller-manager/pkg/apis/machine/v1alpha1"
+	machinecodes "github.com/gardener/machine-controller-manager/pkg/util/provider/machinecodes/codes"
 	"github.com/gardener/machine-controller-manager/pkg/util/provider/machineutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/autoscaler/cluster-autoscaler/utils/gpu"
+	clientfeatures "k8s.io/client-go/features"
+	clientfeaturestesting "k8s.io/client-go/features/testing"
 	"k8s.io/utils/ptr"
 
 	"github.com/stretchr/testify/assert"
@@ -327,4 +331,92 @@ func isSubset[K comparable, V comparable](map1, map2 map[K]V) bool {
 		}
 	}
 	return true
+}
+
+func TestMcmManagerRefresh(t *testing.T) {
+	clientfeaturestesting.SetFeatureDuringTest(t, clientfeatures.WatchListClient, false)
+	credentialStatus := &v1alpha1.MachineDeploymentStatus{
+		FailedMachines: []*v1alpha1.MachineSummary{
+			{
+				Name:          "machine-1",
+				LastOperation: v1alpha1.LastOperation{ErrorCode: machinecodes.Unauthenticated.String()},
+			},
+		},
+	}
+	table := []struct {
+		name                string
+		setup               setup
+		isSuspendScalingErr bool
+		err                 error
+	}{
+		{
+			name: "should return nil when all node groups are healthy",
+			setup: setup{
+				nodes:              newNodes(1, "fakeID"),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: newMachineDeployments(1, 1, nil, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+				mcmDeployment:      newMCMDeployment(1),
+			},
+			err: nil,
+		},
+		{
+			name: "should return ErrSuspendScaling when the single node group has a credential issue",
+			setup: setup{
+				nodes:              newNodes(1, "fakeID"),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: newMachineDeployments(1, 1, credentialStatus, nil, nil),
+				nodeGroups:         []string{nodeGroup2},
+				mcmDeployment:      newMCMDeployment(1),
+			},
+			isSuspendScalingErr: true,
+		},
+		{
+			name: "should return ErrSuspendScaling when one of multiple node groups has a credential issue",
+			setup: setup{
+				nodes:    newNodes(1, "fakeID"),
+				machines: newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				// two MCDs: machinedeployment-1 is healthy, machinedeployment-2 has a credential issue
+				machineDeployments: func() []*v1alpha1.MachineDeployment {
+					mcds := append(newMachineDeployments(1, 1, nil, nil, nil), newMachineDeployments(1, 1, credentialStatus, nil, nil)...)
+					mcds[1].Name = "machinedeployment-2"
+					return mcds
+				}(),
+				nodeGroups:    []string{nodeGroup2, nodeGroup3},
+				mcmDeployment: newMCMDeployment(1),
+			},
+			isSuspendScalingErr: true,
+		},
+		{
+			name: "should return a non-suspend error when the MachineDeployment for a node group is not found",
+			setup: setup{
+				nodes:              newNodes(1, "fakeID"),
+				machines:           newMachines(1, "fakeID", nil, "machinedeployment-1", "machineset-1", []string{"1"}),
+				machineDeployments: []*v1alpha1.MachineDeployment{},
+				nodeGroups:         []string{nodeGroup2},
+				mcmDeployment:      newMCMDeployment(1),
+			},
+			err: fmt.Errorf(`unable to fetch MachineDeployment object "machinedeployment-1", Error: machinedeployment.machine.sapcloud.io "machinedeployment-1" not found`),
+		},
+	}
+	for _, entry := range table {
+		entry := entry
+		t.Run(entry.name, func(t *testing.T) {
+			t.Parallel()
+			stop := make(chan struct{})
+			defer close(stop)
+			controlMachineObjects, targetCoreObjects, appsControlObjects := setupEnv(&entry.setup)
+			m, trackers, hasSyncedCacheFns := createMcmManager(t, stop, testNamespace, entry.setup.nodeGroups, controlMachineObjects, targetCoreObjects, appsControlObjects)
+			defer trackers.Stop()
+			waitForCacheSync(t, stop, hasSyncedCacheFns)
+			err := m.Refresh()
+			if entry.isSuspendScalingErr {
+				assert.True(t, errors.Is(err, ErrSuspendScaling))
+			} else if entry.err != nil {
+				assert.ErrorContains(t, err, entry.err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
