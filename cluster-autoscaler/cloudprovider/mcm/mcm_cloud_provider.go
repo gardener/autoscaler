@@ -355,7 +355,7 @@ func (ngImpl *nodeGroup) Refresh() error {
 	if err != nil {
 		return err
 	}
-	err = checkMachineDeploymentForCredentialIssues(mcd)
+	err = checkMachineDeploymentForInvalidCredentials(mcd)
 	if err != nil {
 		return fmt.Errorf("%w: %w", err, ErrSuspendScaling)
 	}
@@ -628,7 +628,7 @@ func createMachinesTriggeredForDeletionAnnotValue(machineNames []string, timesta
 	return strings.Join(machineNames, fmt.Sprintf("~%s,", timestamp)) + fmt.Sprintf("~%s", timestamp)
 }
 
-func checkMachineDeploymentForCredentialIssues(mcd *v1alpha1.MachineDeployment) error {
+func checkMachineDeploymentForInvalidCredentials(mcd *v1alpha1.MachineDeployment) error {
 	for _, failedMachine := range mcd.Status.FailedMachines {
 		if failedMachine == nil {
 			continue
