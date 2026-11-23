@@ -81,10 +81,6 @@ const (
 	MaxNodeProvisionTimeAnnotation = "autoscaler.gardener.cloud/max-node-provision-time"
 )
 
-// ErrNoNodesToDelete is a sentinel error that indicates that nodes could not be deleted either due to machine being in Failed or Terminating phase,
-// because machine was preserved or because the node was annotated with scale-down-disabled=true
-var ErrNoNodesToDelete = errors.New("no nodes deleted: all candidates skipped due to termination, preservation, or scale-down-disabled annotation")
-
 // ErrSuspendScaling is returned when a condition is detected that requires suspending all CA scaling operations (e.g., machines having credential issues).
 var ErrSuspendScaling = errors.New("cluster autoscaler scaling operations suspended")
 
