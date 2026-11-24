@@ -36,14 +36,14 @@ jobs:
       - name: Set up chart-testing
         uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
       - name: Run chart-testing for CA (lint)
-        run: ct lint --chart-dirs cluster-autoscaler/charts --target-branch ${{ github.event.pull_request.base.ref }}
+        run: ct lint --chart-dirs cluster-autoscaler/charts --target-branch "$GITHUB_BASE_REF"
       - name: Run chart-testing for VPA (lint)
-        run: ct lint --chart-dirs vertical-pod-autoscaler/charts --target-branch ${{ github.event.pull_request.base.ref }} --check-version-increment=false
+        run: ct lint --chart-dirs vertical-pod-autoscaler/charts --target-branch "$GITHUB_BASE_REF" --check-version-increment=false
       # Only build a kind cluster if there are chart changes to test.
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
-          changed=$(ct list-changed --chart-dirs cluster-autoscaler/charts,vertical-pod-autoscaler/charts --target-branch ${{ github.event.pull_request.base.ref }})
+          changed=$(ct list-changed --chart-dirs cluster-autoscaler/charts,vertical-pod-autoscaler/charts --target-branch "$GITHUB_BASE_REF")
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
@@ -54,7 +54,7 @@ jobs:
           config: .github/kind-config.yaml
       - if: steps.list-changed.outputs.changed == 'true'
         name: Run chart-testing (install)
-        run: ct install --chart-dirs cluster-autoscaler/charts,vertical-pod-autoscaler/charts --target-branch ${{ github.event.pull_request.base.ref }}
+        run: ct install --chart-dirs cluster-autoscaler/charts,vertical-pod-autoscaler/charts --target-branch "$GITHUB_BASE_REF"
   helm-docs-validate:
     if: ${{ needs.changes.outputs.charts == 'true' }}
     name: Helm Docs
