@@ -620,7 +620,7 @@ func findMatchingInstance(nodes []*v1.Node, machine *v1alpha1.Machine) cloudprov
 	//	- the VM is up but has not registered yet
 
 	// Report instance with a special placeholder ID so that the autoscaler can track it as an unregistered node.
-	// Report InstanceStatus only for `ResourceExhausted` errors
+	// Report InstanceStatus for all failed create operations errors
 	return cloudprovider.Instance{
 		Id:     placeholderInstanceIDForMachineObj(machine.Name),
 		Status: generateInstanceStatus(machine),
@@ -634,12 +634,16 @@ func placeholderInstanceIDForMachineObj(name string) string {
 // generateInstanceStatus returns cloudprovider.InstanceStatus for the machine obj
 func generateInstanceStatus(machine *v1alpha1.Machine) *cloudprovider.InstanceStatus {
 	if machine.Status.LastOperation.Type == v1alpha1.MachineOperationCreate {
-		if machine.Status.LastOperation.State == v1alpha1.MachineStateFailed && machine.Status.LastOperation.ErrorCode == machinecodes.ResourceExhausted.String() {
+		if machine.Status.LastOperation.State == v1alpha1.MachineStateFailed {
+			errorClass := cloudprovider.OtherErrorClass
+			if machine.Status.LastOperation.ErrorCode == machinecodes.ResourceExhausted.String() {
+				errorClass = cloudprovider.OutOfResourcesErrorClass
+			}
 			return &cloudprovider.InstanceStatus{
 				State: cloudprovider.InstanceCreating,
 				ErrorInfo: &cloudprovider.InstanceErrorInfo{
-					ErrorClass:   cloudprovider.OutOfResourcesErrorClass,
-					ErrorCode:    machinecodes.ResourceExhausted.String(),
+					ErrorClass:   errorClass,
+					ErrorCode:    machine.Status.LastOperation.ErrorCode,
 					ErrorMessage: machine.Status.LastOperation.Description,
 				},
 			}
