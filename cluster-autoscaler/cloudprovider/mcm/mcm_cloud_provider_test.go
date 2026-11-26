@@ -779,6 +779,61 @@ func TestGetOptions(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			"should use MachineEffectiveCreationTimeoutAnnotation for MaxNodeProvisionTime when only that annotation is set",
+			setup{
+				machineDeployments: newMachineDeployments(
+					1,
+					2,
+					nil,
+					map[string]string{
+						MachineEffectiveCreationTimeoutAnnotation: "7m",
+					},
+					nil,
+				),
+				nodeGroups: []string{nodeGroup1},
+			},
+			expect{
+				ngOptions: &config.NodeGroupAutoscalingOptions{
+					ScaleDownUtilizationThreshold:    ngAutoScalingOpDefaults.ScaleDownUtilizationThreshold,
+					ScaleDownGpuUtilizationThreshold: ngAutoScalingOpDefaults.ScaleDownGpuUtilizationThreshold,
+					ScaleDownUnneededTime:            ngAutoScalingOpDefaults.ScaleDownUnneededTime,
+					ScaleDownUnreadyTime:             ngAutoScalingOpDefaults.ScaleDownUnreadyTime,
+					MaxNodeProvisionTime:             7 * time.Minute,
+					IgnoreDaemonSetsUtilization:      ngAutoScalingOpDefaults.IgnoreDaemonSetsUtilization,
+					ZeroOrMaxNodeScaling:             ngAutoScalingOpDefaults.ZeroOrMaxNodeScaling,
+				},
+				err: nil,
+			},
+		},
+		{
+			"should prefer MachineEffectiveCreationTimeoutAnnotation over MaxNodeProvisionTimeAnnotation when both are set",
+			setup{
+				machineDeployments: newMachineDeployments(
+					1,
+					2,
+					nil,
+					map[string]string{
+						MaxNodeProvisionTimeAnnotation:            "3m",
+						MachineEffectiveCreationTimeoutAnnotation: "9m",
+					},
+					nil,
+				),
+				nodeGroups: []string{nodeGroup1},
+			},
+			expect{
+				ngOptions: &config.NodeGroupAutoscalingOptions{
+					ScaleDownUtilizationThreshold:    ngAutoScalingOpDefaults.ScaleDownUtilizationThreshold,
+					ScaleDownGpuUtilizationThreshold: ngAutoScalingOpDefaults.ScaleDownGpuUtilizationThreshold,
+					ScaleDownUnneededTime:            ngAutoScalingOpDefaults.ScaleDownUnneededTime,
+					ScaleDownUnreadyTime:             ngAutoScalingOpDefaults.ScaleDownUnreadyTime,
+					MaxNodeProvisionTime:             9 * time.Minute,
+					IgnoreDaemonSetsUtilization:      ngAutoScalingOpDefaults.IgnoreDaemonSetsUtilization,
+					ZeroOrMaxNodeScaling:             ngAutoScalingOpDefaults.ZeroOrMaxNodeScaling,
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, entry := range table {
